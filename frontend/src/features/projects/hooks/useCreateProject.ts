@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { projectsApi, processApi } from '@/api'
+import { projectsApi, sourcesApi, processApi } from '@/api'
 import type { ProcessRequest, ProjectRead } from '@/types'
 
 interface CreateParams {
@@ -19,17 +19,28 @@ async function createProject({
   text,
   options,
 }: CreateParams): Promise<CreateResult> {
-  let project: ProjectRead
-
-  if (file) {
-    project = await projectsApi.createFromUpload(file, title)
-  } else if (text && text.trim()) {
-    project = await projectsApi.createFromText({ title, text })
-  } else {
+  const trimmedTitle = title.trim()
+  if (!trimmedTitle) {
+    throw new Error('Title is required')
+  }
+  if (!file && !(text && text.trim())) {
     throw new Error('No source provided')
   }
 
-  // Immediately start processing
+  // 1) Create the project shell
+  const project = await projectsApi.createEmpty({ title: trimmedTitle })
+
+  // 2) Attach the source
+  if (file) {
+    await sourcesApi.uploadFiles(project.id, [file])
+  } else if (text) {
+    await sourcesApi.addText(project.id, {
+      name: trimmedTitle,
+      text: text.trim(),
+    })
+  }
+
+  // 3) Kick off processing with all options
   const started = await processApi.start(project.id, options)
   return { project: started }
 }

@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   FileText,
-  Type,
   Trash2,
   Loader2,
   CheckCircle2,
@@ -98,12 +97,8 @@ export function ProjectCard({ project, onDelete, isDeleting }: Props) {
       {/* Meta */}
       <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'rgb(var(--color-text-muted))' }}>
         <span className="flex items-center gap-1">
-          {project.source_type === 'file' ? (
-            <FileText className="h-3.5 w-3.5" />
-          ) : (
-            <Type className="h-3.5 w-3.5" />
-          )}
-          {project.source_type === 'file' ? 'File' : 'Text'}
+          <FileText className="h-3.5 w-3.5" />
+          {project.source_count} source{project.source_count === 1 ? '' : 's'}
         </span>
         <span>{project.word_count.toLocaleString()} words</span>
         <span>{project.num_terms} terms</span>

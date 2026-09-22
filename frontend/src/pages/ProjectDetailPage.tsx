@@ -52,12 +52,12 @@ export function ProjectDetailPage() {
     data: project,
     isLoading,
     isError,
-    error,
     reprocess,
     isReprocessing,
     cancel,
     isCancelling,
   } = useProject(id)
+  
   const glossary = useGlossary(id)
   const stopwords = useStopwords()
 

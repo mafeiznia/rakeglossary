@@ -7,20 +7,30 @@ Designed for local desktop deployment; no secrets are hard-coded.
 from __future__ import annotations
 
 import os
-
-# Allow NLTK to fetch resources through a configured HTTP proxy.
-# Required on Windows machines behind a corporate/ISP proxy
-# (NLTK >= 3.10 enables SSRF protection that blocks proxied fetches by default).
-# Must run before any `import nltk` in the process.
-os.environ.setdefault("NLTK_ALLOW_PROXIED_URLOPEN", "1")
-
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
 def _project_root() -> Path:
-    """Return the project root directory (RakeGlossary/)."""
+    """Return the project root directory (RakeGlossary/).
+
+    This file lives at <root>/backend/app/core/config.py, so we go up
+    four levels: core -> app -> backend -> root.
+    """
     return Path(__file__).resolve().parents[3]
+
+
+def _data_root() -> Path:
+    """Return the runtime data directory.
+
+    Honors the ``RG_DATA_DIR`` environment variable, which the desktop
+    launcher sets in production (pointing to ``%APPDATA%/RakeGlossary/data``).
+    Falls back to ``<project_root>/data`` for development.
+    """
+    override = os.getenv("RG_DATA_DIR")
+    if override:
+        return Path(override)
+    return _project_root() / "data"
 
 
 @dataclass(frozen=True)
@@ -28,19 +38,27 @@ class Paths:
     """Resolved filesystem paths used across the app."""
 
     root: Path = field(default_factory=_project_root)
-    data: Path = field(init=False)
-    projects: Path = field(init=False)
+    data: Path = field(default_factory=_data_root)
+    uploads: Path = field(init=False)
     exports: Path = field(init=False)
     cache: Path = field(init=False)
     logs: Path = field(init=False)
+    projects: Path = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "data", self.root / "data")
-        object.__setattr__(self, "projects", self.data / "projects")
+        object.__setattr__(self, "uploads", self.data / "uploads")
         object.__setattr__(self, "exports", self.data / "exports")
         object.__setattr__(self, "cache", self.data / "cache")
         object.__setattr__(self, "logs", self.data / "logs")
-        for p in (self.data, self.projects, self.exports, self.cache, self.logs):
+        object.__setattr__(self, "projects", self.data / "projects")
+        for p in (
+            self.data,
+            self.uploads,
+            self.exports,
+            self.cache,
+            self.logs,
+            self.projects,
+        ):
             p.mkdir(parents=True, exist_ok=True)
 
 
@@ -59,23 +77,21 @@ class Settings:
     # --- Translation ---
     translation_provider: str = os.getenv("RG_TRANSLATION_PROVIDER", "google")
     libre_translate_url: str = os.getenv("RG_LIBRE_URL", "http://127.0.0.1:5000")
-
-    # --- HTTP clients ---
-    http_timeout: float = float(os.getenv("RG_HTTP_TIMEOUT", "8.0"))
-    user_agent: str = os.getenv(
-        "RG_USER_AGENT",
-        "RakeGlossary/0.1.0 (https://example.invalid; contact@example.invalid)",
-    )
+    translation_rate_limit: float = float(os.getenv("RG_TRANSLATION_RATE_LIMIT", "4.0"))
+    translation_max_retries: int = int(os.getenv("RG_TRANSLATION_MAX_RETRIES", "4"))
+    translation_retry_base_delay: float = float(os.getenv("RG_TRANSLATION_RETRY_BASE_DELAY", "0.5"))
+    translation_batch_size: int = int(os.getenv("RG_TRANSLATION_BATCH_SIZE", "25"))
 
     # --- Wikipedia ---
     wikipedia_api: str = os.getenv("RG_WIKI_API", "https://en.wikipedia.org/w/api.php")
     wikipedia_timeout: float = float(os.getenv("RG_WIKI_TIMEOUT", "3.0"))
 
-    # --- Translation rate limiting ---
-    translation_rate_limit: float = float(os.getenv("RG_TRANSLATION_RATE_LIMIT", "4.0"))
-    translation_max_retries: int = int(os.getenv("RG_TRANSLATION_MAX_RETRIES", "4"))
-    translation_retry_base_delay: float = float(os.getenv("RG_TRANSLATION_RETRY_DELAY", "1.5"))
-    translation_batch_size: int = int(os.getenv("RG_TRANSLATION_BATCH_SIZE", "25"))
+    # --- HTTP ---
+    http_timeout: float = float(os.getenv("RG_HTTP_TIMEOUT", "8.0"))
+    user_agent: str = os.getenv(
+        "RG_USER_AGENT",
+        "RakeGlossary/0.1.0 (+https://github.com/mafeiznia/rakeglossary)",
+    )
 
     # --- LLM ---
     llm_timeout: float = float(os.getenv("RG_LLM_TIMEOUT", "30.0"))

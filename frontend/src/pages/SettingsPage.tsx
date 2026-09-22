@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, FolderOpen } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { THEMES, useSettings } from '@/features/settings/settingsStore'
 import { StopwordsManager } from '@/features/settings/components/StopwordsManager'
