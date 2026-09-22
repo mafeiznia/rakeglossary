@@ -58,6 +58,42 @@ log = logging.getLogger("launcher")
 
 
 # ---------------------------------------------------------------------------
+# NLTK data path (needed in both dev and frozen mode)
+# ---------------------------------------------------------------------------
+
+
+def _configure_nltk_path() -> None:
+    """Make NLTK find the bundled or user-installed nltk_data directory.
+
+    - In dev: NLTK already looks in %APPDATA%/nltk_data
+    - In frozen mode: the bundle ships nltk_data/ at <_MEIPASS>/nltk_data
+    """
+    import nltk
+
+    paths: list[str] = []
+    if getattr(sys, "frozen", False):
+        # PyInstaller extracts datas to sys._MEIPASS
+        bundled = Path(sys._MEIPASS) / "nltk_data"  # type: ignore[attr-defined]
+        if bundled.is_dir():
+            paths.append(str(bundled))
+
+    # Always add the user-level fallback
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        user_path = Path(appdata) / "nltk_data"
+        if user_path.is_dir():
+            paths.append(str(user_path))
+
+    for p in paths:
+        if p not in nltk.data.path:
+            nltk.data.path.insert(0, p)
+            log.info(f"NLTK data path added: {p}")
+
+
+_configure_nltk_path()
+
+
+# ---------------------------------------------------------------------------
 # Runtime data directory
 # ---------------------------------------------------------------------------
 # In dev:       <project>/data/

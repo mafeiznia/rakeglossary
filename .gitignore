@@ -83,5 +83,4 @@ logs/
 # --- PyInstaller ---
 backend/build/
 backend/dist/
-*.spec
 *.before-*

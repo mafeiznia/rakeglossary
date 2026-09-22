@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -18,8 +19,18 @@ from app.core.version import APP_NAME, __version__
 log = get_logger("main")
 
 # Frontend build directory (present only after `npm run build`)
-_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+def _frontend_dist() -> Path:
+    """Return the directory containing the built SPA.
 
+    - In a PyInstaller bundle: ``<_MEIPASS>/frontend/dist``
+    - In dev:                  ``<root>/frontend/dist``
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "frontend" / "dist"  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+_FRONTEND_DIST = _frontend_dist()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):

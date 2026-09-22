@@ -58,6 +58,12 @@ dev = [
     "ruff>=0.7",
     "black>=24.10",
     "mypy>=1.13",
+]
+
+offline = [
+    # Optional: fully-offline translation via Argos Translate.
+    # Adds ~500 MB to the bundle. Install only if you need it:
+    #     pip install -e ".[dev,offline]"
     "argostranslate>=1.9",
 ]
 

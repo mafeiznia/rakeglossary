@@ -2,7 +2,7 @@
 
 Orchestration depends on `project.processing_mode`:
 
-    offline — classic definitions (in-text/Wiki/WordNet) + Argos translation
+    offline — classic definitions (in-text/Wiki/WordNet) + Google translation
     hybrid  — classic definitions + LLM translation (batch, context-aware)
     ai      — LLM extraction + LLM translation (single unified prompt,
               chunk-based, with full AI extras: pos, category, alternatives, notes)
@@ -263,17 +263,17 @@ def _run_pipeline_classic(
     if project.translate_terms and terms_to_translate:
         if mode == ProcessingMode.OFFLINE:
             on_progress(
-                f"Translating {len(terms_to_translate)} terms with Argos...",
+                f"Translating {len(terms_to_translate)} terms with Google...",
                 step="translate",
                 current=1,
                 total=1,
             )
             try:
-                persian_terms = translate_many(terms_to_translate, provider="argos")
+                persian_terms = translate_many(terms_to_translate, provider="google")
             except CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001
-                log.warning(f"Argos term translation failed: {exc}")
+                log.warning(f"Google term translation failed: {exc}")
         else:  # HYBRID
             on_progress(
                 f"Translating {len(terms_to_translate)} terms with LLM...",
@@ -305,19 +305,19 @@ def _run_pipeline_classic(
     if project.translate_definitions and def_texts:
         if mode == ProcessingMode.OFFLINE:
             on_progress(
-                f"Translating {len(def_texts)} definitions with Argos...",
+                f"Translating {len(def_texts)} definitions with Google...",
                 step="translate",
                 current=1,
                 total=1,
             )
             try:
-                translated = translate_many(def_texts, provider="argos")
+                translated = translate_many(def_texts, provider="google")
                 for i, tr in zip(def_idx, translated):
                     persian_defs_full[i] = tr
             except CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001
-                log.warning(f"Argos definition translation failed: {exc}")
+                log.warning(f"Google definition translation failed: {exc}")
         else:  # HYBRID
             on_progress(
                 f"Translating {len(def_texts)} definitions with LLM...",

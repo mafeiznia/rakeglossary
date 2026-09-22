@@ -8,6 +8,7 @@ any Python code.
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -16,7 +17,25 @@ from app.core.logging import get_logger
 
 log = get_logger("llm.providers")
 
-_JSON_PATH = Path(__file__).parent / "llm_providers.json"
+def _json_path() -> Path:
+    """Return the path to llm_providers.json.
+
+    - In a PyInstaller bundle: ``<_MEIPASS>/backend/app/pipeline/definitions/``
+    - In dev:                  the directory containing this file
+    """
+    if getattr(sys, "frozen", False):
+        return (
+            Path(sys._MEIPASS)  # type: ignore[attr-defined]
+            / "backend"
+            / "app"
+            / "pipeline"
+            / "definitions"
+            / "llm_providers.json"
+        )
+    return Path(__file__).parent / "llm_providers.json"
+
+
+_JSON_PATH = _json_path()
 
 
 @dataclass(frozen=True)
