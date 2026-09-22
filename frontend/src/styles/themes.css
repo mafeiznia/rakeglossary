@@ -1,0 +1,94 @@
+/* Theme system using CSS custom properties.
+   Each theme defines the same set of variables, so components
+   only need to reference --color-* variables. */
+
+:root,
+[data-theme="indigo-light"] {
+  --color-bg: 248 250 252;              /* slate-50 */
+  --color-surface: 255 255 255;         /* white */
+  --color-surface-alt: 241 245 249;     /* slate-100 */
+  --color-border: 226 232 240;          /* slate-200 */
+  --color-text: 15 23 42;               /* slate-900 */
+  --color-text-muted: 100 116 139;      /* slate-500 */
+  --color-primary: 79 70 229;           /* indigo-600 */
+  --color-primary-hover: 67 56 202;     /* indigo-700 */
+  --color-primary-fg: 255 255 255;
+  --color-success: 22 163 74;           /* green-600 */
+  --color-warning: 245 158 11;          /* amber-500 */
+  --color-error: 220 38 38;             /* red-600 */
+  --color-info: 2 132 199;              /* sky-600 */
+}
+
+[data-theme="emerald-light"] {
+  --color-bg: 248 250 252;
+  --color-surface: 255 255 255;
+  --color-surface-alt: 241 245 249;
+  --color-border: 226 232 240;
+  --color-text: 15 23 42;
+  --color-text-muted: 100 116 139;
+  --color-primary: 5 150 105;           /* emerald-600 */
+  --color-primary-hover: 4 120 87;      /* emerald-700 */
+  --color-primary-fg: 255 255 255;
+  --color-success: 22 163 74;
+  --color-warning: 245 158 11;          /* amber-500 */
+  --color-error: 220 38 38;
+  --color-info: 2 132 199;
+}
+
+[data-theme="rose-light"] {
+  --color-bg: 255 251 252;
+  --color-surface: 255 255 255;
+  --color-surface-alt: 254 242 242;
+  --color-border: 254 226 226;
+  --color-text: 28 25 23;
+  --color-text-muted: 120 113 108;
+  --color-primary: 225 29 72;           /* rose-600 */
+  --color-primary-hover: 190 18 60;     /* rose-700 */
+  --color-primary-fg: 255 255 255;
+  --color-success: 22 163 74;
+  --color-warning: 245 158 11;
+  --color-error: 220 38 38;
+  --color-info: 2 132 199;
+}
+
+[data-theme="slate-dark"] {
+  --color-bg: 15 23 42;                 /* slate-900 */
+  --color-surface: 30 41 59;            /* slate-800 */
+  --color-surface-alt: 51 65 85;        /* slate-700 */
+  --color-border: 71 85 105;            /* slate-600 */
+  --color-text: 248 250 252;            /* slate-50 */
+  --color-text-muted: 148 163 184;      /* slate-400 */
+  --color-primary: 129 140 248;         /* indigo-400 */
+  --color-primary-hover: 99 102 241;    /* indigo-500 */
+  --color-primary-fg: 15 23 42;
+  --color-success: 74 222 128;          /* green-400 */
+  --color-warning: 251 191 36;          /* amber-400 */
+  --color-error: 248 113 113;           /* red-400 */
+  --color-info: 56 189 248;             /* sky-400 */
+}
+
+[data-theme="midnight-dark"] {
+  --color-bg: 2 6 23;                   /* slate-950 */
+  --color-surface: 15 23 42;            /* slate-900 */
+  --color-surface-alt: 30 41 59;        /* slate-800 */
+  --color-border: 51 65 85;             /* slate-700 */
+  --color-text: 241 245 249;            /* slate-100 */
+  --color-text-muted: 148 163 184;      /* slate-400 */
+  --color-primary: 96 165 250;          /* blue-400 */
+  --color-primary-hover: 59 130 246;    /* blue-500 */
+  --color-primary-fg: 2 6 23;
+  --color-success: 74 222 128;
+  --color-warning: 251 191 36;
+  --color-error: 248 113 113;
+  --color-info: 56 189 248;
+}
+
+/* Optional utility classes that use the variables */
+.theme-bg { background-color: rgb(var(--color-bg)); }
+.theme-surface { background-color: rgb(var(--color-surface)); }
+.theme-surface-alt { background-color: rgb(var(--color-surface-alt)); }
+.theme-border { border-color: rgb(var(--color-border)); }
+.theme-text { color: rgb(var(--color-text)); }
+.theme-text-muted { color: rgb(var(--color-text-muted)); }
+.theme-primary { background-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-fg)); }
+.theme-primary:hover { background-color: rgb(var(--color-primary-hover)); }

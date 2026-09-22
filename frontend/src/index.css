@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "./styles/themes.css";
+
+@theme {
+  --font-sans: "Inter", "Vazirmatn", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  html[dir="rtl"] {
+    font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    height: 100%;
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-text));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  #root {
+    height: 100%;
+  }
+}
+
+/* ============================================================
+   Animation duration tokens (subtle, professional)
+   ============================================================ */
+:root {
+  --anim-fast: 120ms;
+  --anim-normal: 250ms;
+  --anim-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   Keyframes
+   ============================================================ */
+
+/* Fade in - used for panels, dialogs, route transitions */
+@keyframes rg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade + subtle rise - used for content that appears (log events, table rows) */
+@keyframes rg-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade + scale - used for dialogs and panels */
+@keyframes rg-scale-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Skeleton shimmer */
+@keyframes rg-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* Tooltip (kept from earlier) */
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+   Utility classes
+   ============================================================ */
+
+.rg-anim-fade-in {
+  animation: rg-fade-in var(--anim-normal) var(--anim-easing) both;
+}
+
+.rg-anim-fade-up {
+  animation: rg-fade-up var(--anim-normal) var(--anim-easing) both;
+}
+
+.rg-anim-scale-fade {
+  animation: rg-scale-fade var(--anim-fast) var(--anim-easing) both;
+}
+
+/* Staggered children (used for EmptyState) */
+.rg-stagger > * {
+  animation: rg-fade-up var(--anim-normal) var(--anim-easing) both;
+}
+.rg-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.rg-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.rg-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.rg-stagger > *:nth-child(4) { animation-delay: 120ms; }
+
+/* Skeleton shimmer */
+.rg-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(var(--color-surface-alt));
+}
+.rg-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(var(--color-border) / 0.35) 50%,
+    transparent 100%
+  );
+  background-size: 800px 100%;
+  animation: rg-shimmer 1.6s linear infinite;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .rg-anim-fade-in,
+  .rg-anim-fade-up,
+  .rg-anim-scale-fade,
+  .rg-stagger > *,
+  .rg-skeleton::after {
+    animation: none !important;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

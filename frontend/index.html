@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RakeGlossary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Prevent FOUC: apply theme + dir + lang BEFORE React mounts -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background-color: #f8fafc;
+        color-scheme: light;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      html[data-theme="slate-dark"],
+      html[data-theme="slate-dark"] body {
+        background-color: #0f172a;
+        color-scheme: dark;
+      }
+      html[data-theme="midnight-dark"],
+      html[data-theme="midnight-dark"] body {
+        background-color: #020617;
+        color-scheme: dark;
+      }
+    </style>
+
+    <script>
+      (function () {
+        try {
+          var STORAGE_KEY = 'rakeglossary-settings'
+          var DEFAULT_THEME = 'indigo-light'
+          var DEFAULT_LANG = 'fa'
+
+          var theme = DEFAULT_THEME
+          var language = DEFAULT_LANG
+          var raw = localStorage.getItem(STORAGE_KEY)
+
+          if (raw) {
+            var data = JSON.parse(raw)
+            var state = data && data.state ? data.state : data
+            if (state) {
+              if (typeof state.theme === 'string' && state.theme) {
+                theme = state.theme
+              }
+              if (typeof state.language === 'string' && state.language) {
+                language = state.language
+              }
+            }
+          }
+
+          var root = document.documentElement
+          root.setAttribute('data-theme', theme)
+          root.setAttribute('dir', language === 'fa' ? 'rtl' : 'ltr')
+          root.setAttribute('lang', language)
+        } catch (e) {
+          // ignore
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
