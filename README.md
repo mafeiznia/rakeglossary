@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # RakeGlossary
 
 > **تولیدکننده‌ی خودکار واژه‌نامه‌ی دو زبانه (انگلیسی → فارسی) از کتاب و متن**
@@ -448,7 +447,3 @@ RakeGlossary/
 <p align="center">
   ساخته‌شده با ❤️ برای مترجمان و ویراستاران فارسی
 </p>
-=======
-# rakeglossary
-English-Persian Glossary Builder for Book Translation
->>>>>>> 2d4f240df737abfd5227e9ba1b55124aa2cd986e
