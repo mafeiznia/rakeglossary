@@ -3,7 +3,7 @@
 > نقشه‌ی راه و ایده‌های توسعه برای مراحل بعدی پروژه.
 
 **نسخه فعلی:** 0.1.0  
-**آخرین به‌روزرسانی:** 2026-09-21
+**آخرین به‌روزرسانی:** 2026-09-22
 
 ---
 
@@ -12,12 +12,15 @@
 | بخش | وضعیت |
 |---|---|
 | Backend tests | ✅ 204 پاس |
-| Frontend tests | ✅ 14 پاس |
+| Frontend tests | ✅ 150 پاس |
 | زیرساخت Vitest | ✅ |
 | D.6 backend README | ✅ |
 | D.7 frontend README | ✅ |
 | D.8 About + version badge | ✅ |
 | D.9 Vitest setup | ✅ |
+| D.10 تست‌های بیشتر frontend | ✅ 150 تست |
+| D.11 CI/CD (GitHub Actions) | ✅ backend + frontend سبز |
+| D.12 مستندات کامل | ✅ |
 | dev server | ✅ |
 
 **اجرای تست‌ها:**
@@ -29,33 +32,41 @@
 
 ## 🗺️ نقشه‌ی راه — تسک‌های برنامه‌ریزی‌شده
 
-### D.10 — تست‌های بیشتر frontend
+### D.10 — تست‌های بیشتر frontend ✅
+
+**وضعیت:** انجام شد  
+**نتیجه:** از ۱۴ تست به ۱۵۰ تست رسیدیم
 
 **هدف:** افزایش coverage و catch رگرسیون در اجزای کلیدی UI.
 
 **گام‌ها:**
 
-1. تست `SettingsPage` (integration)
-2. تست `ProjectsPage` (لیست، خالی، لودینگ)
-3. تست `ProjectDetailPage` (نقشه‌ها، حالت‌ها)
-4. تست کامپوننت‌های `features/settings/`:
-   - `StopwordsManager`
-   - `LlmSettings`
-   - `LlmQuickSetupDialog`
-5. تست کامپوننت‌های `features/sources/`
-6. تست کامپوننت‌های `features/glossary/`
-7. تست hookهای دیگر: `useSettings`, `useConfirm`, `useProgressStream`
-8. افزایش coverage به بالای 60%
+- [x] 1. تست `SettingsPage` (integration)
+- [x] 2. تست `ProjectsPage` (لیست، خالی، لودینگ)
+- [x] 3. تست `ProjectDetailPage` (نقشه‌ها، حالت‌ها)
+- [x] 4. تست کامپوننت‌های `features/settings/`
+- [x] 5. تست کامپوننت‌های `features/sources/`
+- [x] 6. تست کامپوننت‌های `features/glossary/`
+- [x] 7. تست hookهای دیگر
+- [x] 8. افزایش coverage به بالای 60%
 
 **خروجی:** پوشه‌ی `src/**/*.test.tsx` گسترده + گزارش coverage.
 
 ---
 
-### D.11 — CI/CD با GitHub Actions
+### D.11 — CI/CD با GitHub Actions ✅
+
+**وضعیت:** انجام شد  
+**نتیجه:** هر دو workflow روی GitHub Actions سبز
 
 **هدف:** اجرای خودکار تست‌ها و linting روی هر push/PR.
 
 **گام‌ها:**
+
+- [x] 1. ساخت `.github/workflows/backend-ci.yml`
+- [x] 2. ساخت `.github/workflows/frontend-ci.yml`
+- [x] 3. Badge در `README.md`
+- [ ] 4. (اختیاری) Pre-commit hooks — به D.13 منتقل شد
 
 1. ساخت `.github/workflows/backend-ci.yml`:
    - اجرا روی `windows-latest` و `ubuntu-latest`
