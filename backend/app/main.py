@@ -18,6 +18,7 @@ from app.core.version import APP_NAME, __version__
 
 log = get_logger("main")
 
+
 # Frontend build directory (present only after `npm run build`)
 def _frontend_dist() -> Path:
     """Return the directory containing the built SPA.
@@ -31,6 +32,7 @@ def _frontend_dist() -> Path:
 
 
 _FRONTEND_DIST = _frontend_dist()
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):

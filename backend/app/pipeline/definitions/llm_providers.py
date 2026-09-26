@@ -17,6 +17,7 @@ from app.core.logging import get_logger
 
 log = get_logger("llm.providers")
 
+
 def _json_path() -> Path:
     """Return the path to llm_providers.json.
 
