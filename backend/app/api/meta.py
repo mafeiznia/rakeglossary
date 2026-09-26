@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -38,6 +40,7 @@ class AboutResponse(BaseModel):
     author: AuthorInfo
     tech_stack: TechStack
     github: str
+    desktop_mode: bool
 
 
 @router.get(
@@ -80,4 +83,5 @@ def about() -> AboutResponse:
             nlp="spaCy + RAKE + YAKE",
         ),
         github=v.GITHUB_REPO,
+        desktop_mode=bool(getattr(sys, "frozen", False)),
     )

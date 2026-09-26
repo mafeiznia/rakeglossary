@@ -31,4 +31,5 @@ export interface AboutResponse {
   author: AboutAuthor;
   tech_stack: AboutTechStack;
   github: string;
+  desktop_mode: boolean;
 }
