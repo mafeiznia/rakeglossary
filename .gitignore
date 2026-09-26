@@ -84,3 +84,7 @@ logs/
 backend/build/
 backend/dist/
 *.before-*
+
+# Temporary handoff documents (local only)
+docs/HANDOFF-Rev*.md
+docs/Handoff-Rev*.md
