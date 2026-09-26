@@ -9,6 +9,10 @@ export default {
       projects: 'Projects',
       settings: 'Settings',
     },
+    export: {
+      savedAndOpened: 'Saved: {{filename}}',
+      savedTo: 'Saved to: {{path}}',
+    },    
     home: {
       title: 'Automated Glossary Generator',
       subtitle: 'Upload a book or paste text and get a bilingual glossary',

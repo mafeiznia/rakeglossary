@@ -9,6 +9,10 @@ export default {
       projects: 'پروژه‌ها',
       settings: 'تنظیمات',
     },
+    export: {
+      savedAndOpened: 'ذخیره شد: {{filename}}',
+      savedTo: 'ذخیره شد در: {{path}}',
+    },    
     home: {
       title: 'واژه‌نامه‌ساز خودکار',
       subtitle: 'یک کتاب یا متن آپلود کن و واژه‌نامه دو‌زبانه بگیر',
