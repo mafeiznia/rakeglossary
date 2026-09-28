@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import Base
 from app.pipeline import llm_client
+from app.pipeline.translation import cache as cache_module
 from app.services import llm_config_service
 
 
@@ -166,3 +167,94 @@ def test_extraction_prompt_includes_all_metadata_fields() -> None:
     assert "Intermediate" in prompt, "reading_level missing from prompt"
     assert "Everyday" in prompt, "vocabulary_complexity missing from prompt"
     assert "European history" in prompt, "cultural_context missing from prompt"
+
+
+# ---------------------------------------------------------------------------
+# Bug 9: Arabic lookalike characters in Persian output
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_persian_converts_arabic_chars() -> None:
+    """Regression: LLM output sometimes contains Arabic ي/ك instead of
+    Persian ی/ک. normalize_persian must convert them."""
+    from app.pipeline.text_utils import normalize_persian
+
+    # Arabic yeh (U+064A) -> Persian yeh (U+06CC)
+    assert normalize_persian("دنیاي") == "دنیای"
+    # Arabic kaf (U+0643) -> Persian keheh (U+06A9)
+    assert normalize_persian("كتاب") == "کتاب"
+    # Alef maksura (U+0649) -> Persian yeh
+    assert normalize_persian("مصطفى") == "مصطفی"
+    # Already-correct text must pass through unchanged
+    assert normalize_persian("سلام دنیا") == "سلام دنیا"
+    assert normalize_persian("") == ""
+
+
+def test_extract_normalizes_arabic_in_persian_term(session: Session) -> None:
+    """Regression: persian_primary from LLM must be normalized."""
+    _configure_llm(session)
+    source = "Yumiko walked."
+    response = _mock_response(
+        '{"glossary": [{'
+        '"source_term": "Yumiko", '
+        '"persian_primary": "یوميكو", '
+        '"persian_alternatives": ["یومیکو (دیگر)"], '
+        '"context_sentence": "Yumiko walked."'
+        "}]}"
+    )
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = response
+
+    with patch("openai.OpenAI", return_value=mock_client):
+        result = llm_client.extract_terms_llm(source, None)
+
+    assert result[0]["persian_term"] == "یومیکو"
+    assert result[0]["persian_alternatives"] == ["یومیکو (دیگر)"]
+
+
+def test_translate_many_normalizes_arabic_output(session: Session) -> None:
+    """Regression: translations with Arabic lookalike chars must be
+    normalized to Persian."""
+    cache_module._CACHE.clear()
+    _configure_llm(session)
+    response = _mock_response('{"translations": ["یوميكو"]}')
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = response
+
+    with patch("openai.OpenAI", return_value=mock_client):
+        results = llm_client.translate_many(["Yumiko"])
+
+    assert results[0] == "یومیکو"
+
+
+# ---------------------------------------------------------------------------
+# Bug 10: LLM translation drops items when count mismatch
+# ---------------------------------------------------------------------------
+
+
+def test_translate_many_retries_missing_items(session: Session) -> None:
+    """Regression: when the LLM returns fewer translations than inputs,
+    the missing ones must be retried individually so no term is left
+    without a translation."""
+    cache_module._CACHE.clear()
+    _configure_llm(session)
+
+    # Chunk call returns 1 item for 2 inputs (wrong count)
+    chunk_response = _mock_response('{"translations": ["یک"]}')
+    # Retry returns the missing second item
+    retry_response = _mock_response('{"translations": ["دو"]}')
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = [
+        chunk_response,
+        retry_response,
+    ]
+
+    with patch("openai.OpenAI", return_value=mock_client):
+        results = llm_client.translate_many(["one", "two"], chunk_size=25)
+
+    assert len(results) == 2
+    assert results[0] == "یک"
+    assert results[1] == "دو", f"missing item was not retried: {results!r}"
+    # Two calls: initial chunk + one retry
+    assert mock_client.chat.completions.create.call_count == 2

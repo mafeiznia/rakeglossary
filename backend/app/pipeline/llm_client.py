@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.logging import get_logger
 from app.pipeline.definitions.llm_providers import get_provider
+from app.pipeline.text_utils import normalize_persian
 
 log = get_logger("llm.client")
 
@@ -583,15 +584,17 @@ def _normalize_extraction_item(item: dict, source_text: str) -> dict | None:
     if len(context) > 250:
         context = context[:250].rstrip() + "..."
 
-    persian_primary = (item.get("persian_primary") or item.get("persian_term") or "").strip()
+    persian_primary = normalize_persian(
+        (item.get("persian_primary") or item.get("persian_term") or "").strip()
+    )
 
     alternatives_raw = item.get("persian_alternatives") or []
     if not isinstance(alternatives_raw, list):
         alternatives_raw = []
     alternatives = [
-        str(a).strip()
+        normalize_persian(str(a).strip())
         for a in alternatives_raw
-        if a and str(a).strip() and str(a).strip() != persian_primary
+        if a and str(a).strip() and normalize_persian(str(a).strip()) != persian_primary
     ]
     # Limit to 3
     alternatives = alternatives[:3]
@@ -603,7 +606,10 @@ def _normalize_extraction_item(item: dict, source_text: str) -> dict | None:
         "context": context,
         "pos": (item.get("pos") or "").strip() or None,
         "category": (item.get("category") or "").strip() or None,
-        "persian_transliteration": (item.get("persian_transliteration") or "").strip() or None,
+        "persian_transliteration": (
+            normalize_persian(item.get("persian_transliteration") or "").strip()
+        )
+        or None,
         "translator_note": (item.get("translator_note") or "").strip() or None,
     }
 
@@ -855,10 +861,50 @@ def translate_many(
                 f"{len(translated) if isinstance(translated, list) else '?'} "
                 f"items for {len(chunk)} inputs."
             )
+            # Map what we can from the (partial) response
+            filled_indices: set[int] = set()
             if isinstance(translated, list):
                 for (i, original), tr in zip(chunk, translated):
                     if isinstance(tr, str) and tr.strip():
-                        cleaned = tr.strip()
+                        cleaned = normalize_persian(tr.strip())
+                        results[i] = cleaned
+                        filled_indices.add(i)
+                        cache_payload = f"{context or ''}|{original}" if context else original
+                        _cache_set(
+                            _CACHE_NS_TRA,
+                            cfg.provider,
+                            cfg.model,
+                            cache_payload,
+                            cleaned,
+                        )
+
+            # Retry the remaining items individually
+            for i, original in chunk:
+                if i in filled_indices:
+                    continue
+                try:
+                    retry_payload = json.dumps({"items": [original]}, ensure_ascii=False)
+                    retry_resp = client.chat.completions.create(
+                        model=cfg.model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": retry_payload},
+                        ],
+                        max_tokens=settings.llm_max_tokens * 4,
+                        temperature=0.1,
+                        response_format={"type": "json_object"},
+                    )
+                    retry_raw = (retry_resp.choices[0].message.content or "").strip()
+                    retry_raw = _strip_markdown_fences(retry_raw)
+                    retry_data = json.loads(retry_raw)
+                    retry_list = retry_data.get("translations", [])
+                    if (
+                        isinstance(retry_list, list)
+                        and retry_list
+                        and isinstance(retry_list[0], str)
+                        and retry_list[0].strip()
+                    ):
+                        cleaned = normalize_persian(retry_list[0].strip())
                         results[i] = cleaned
                         cache_payload = f"{context or ''}|{original}" if context else original
                         _cache_set(
@@ -870,14 +916,16 @@ def translate_many(
                         )
                     else:
                         results[i] = ""
-            else:
-                for i, _ in chunk:
+                except Exception as exc:  # noqa: BLE001
+                    log.warning(
+                        f"LLM retry failed for '{original}': " f"{type(exc).__name__}: {exc}"
+                    )
                     results[i] = ""
             continue
 
         for (i, original), tr in zip(chunk, translated):
             if isinstance(tr, str) and tr.strip():
-                cleaned = tr.strip()
+                cleaned = normalize_persian(tr.strip())
                 results[i] = cleaned
                 cache_payload = f"{context or ''}|{original}" if context else original
                 _cache_set(
