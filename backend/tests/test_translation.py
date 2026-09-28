@@ -1,4 +1,5 @@
 """Tests for translation service."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -34,7 +35,8 @@ def test_translation_failure_returns_empty_string() -> None:
     ):
         result = translate("Hello", provider="google")
         assert result == ""
-        
+
+
 def test_silent_failure_detected() -> None:
     """If the provider returns the input unchanged, treat it as failure."""
     cache_module._CACHE.clear()
@@ -43,8 +45,9 @@ def test_silent_failure_detected() -> None:
         return_value="Hello",
     ):
         result = translate("Hello", provider="google")
-        assert result == ""        
-        
+        assert result == ""
+
+
 def test_translate_many_uses_cache() -> None:
     cache_module._CACHE.clear()
     with patch(
@@ -75,12 +78,15 @@ def test_translate_many_returns_empty_on_failure() -> None:
     """When batch translation fails and no Wikipedia fallback exists,
     the service returns empty strings."""
     cache_module._CACHE.clear()
-    with patch(
-        "app.pipeline.translation.google.GoogleTranslatorProvider.translate_batch",
-        side_effect=Exception("network down"),
-    ), patch(
-        "app.pipeline.definitions.wikipedia_langlinks.fetch_persian_title",
-        return_value=None,
+    with (
+        patch(
+            "app.pipeline.translation.google.GoogleTranslatorProvider.translate_batch",
+            side_effect=Exception("network down"),
+        ),
+        patch(
+            "app.pipeline.definitions.wikipedia_langlinks.fetch_persian_title",
+            return_value=None,
+        ),
     ):
         # Use non-proper-name terms so Wikipedia fallback isn't triggered
         result = translate_many(["something", "else"], provider="google")

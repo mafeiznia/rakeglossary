@@ -1,4 +1,5 @@
 """Tests for Pydantic schemas."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,7 +21,6 @@ from app.schemas import (
     SettingUpdate,
     TextSourceCreate,
 )
-
 
 # ---------------------------------------------------------------------------
 # ProjectCreateEmpty
@@ -142,7 +142,7 @@ def test_project_read_inherits_summary() -> None:
         translate_definitions = False
         terms_per_1k_words = 15.0
         translation_provider = "libretranslate"
-        processing_mode = "hybrid"      # ← این‌جا عوض شد
+        processing_mode = "hybrid"  # ← این‌جا عوض شد
         use_spacy = True
         use_rake = True
         use_yake = False

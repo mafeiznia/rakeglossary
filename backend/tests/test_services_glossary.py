@@ -1,4 +1,5 @@
 """Tests for glossary_service."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -17,7 +18,8 @@ from app.services import glossary_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -42,14 +44,24 @@ def _mk_project(session: Session) -> Project:
 def _mk_pipeline_entries() -> list[PipelineEntry]:
     return [
         PipelineEntry(
-            english_term="DNA", persian_term="دی‌ان‌ای",
-            english_definition="A molecule.", persian_definition="یک مولکول.",
-            source="In-Text", score=0.9, frequency=3, context="DNA is...",
+            english_term="DNA",
+            persian_term="دی‌ان‌ای",
+            english_definition="A molecule.",
+            persian_definition="یک مولکول.",
+            source="In-Text",
+            score=0.9,
+            frequency=3,
+            context="DNA is...",
         ),
         PipelineEntry(
-            english_term="AI", persian_term="هوش مصنوعی",
-            english_definition="A field.", persian_definition="یک رشته.",
-            source="Wikipedia", score=0.5, frequency=1, context="AI is...",
+            english_term="AI",
+            persian_term="هوش مصنوعی",
+            english_definition="A field.",
+            persian_definition="یک رشته.",
+            source="Wikipedia",
+            score=0.5,
+            frequency=1,
+            context="AI is...",
         ),
     ]
 
@@ -80,9 +92,7 @@ def test_update_marks_edited(session: Session) -> None:
     glossary_service.replace_entries(session, p.id, _mk_pipeline_entries())
     entry = glossary_service.list_for_project(session, p.id)[0]
 
-    glossary_service.update(
-        session, entry, GlossaryEntryUpdate(persian_term="مولکول")
-    )
+    glossary_service.update(session, entry, GlossaryEntryUpdate(persian_term="مولکول"))
     assert entry.persian_term == "مولکول"
     assert entry.is_edited is True
 

@@ -1,4 +1,5 @@
 """Tests for the glossary API endpoints."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -18,7 +19,8 @@ from app.models import GlossaryEntry, Project
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -43,10 +45,12 @@ def client() -> Iterator[TestClient]:
             p = Project(title="P")
             s.add(p)
             s.commit()
-            s.add_all([
-                GlossaryEntry(project_id=p.id, english_term="DNA", score=0.9),
-                GlossaryEntry(project_id=p.id, english_term="AI", score=0.5),
-            ])
+            s.add_all(
+                [
+                    GlossaryEntry(project_id=p.id, english_term="DNA", score=0.9),
+                    GlossaryEntry(project_id=p.id, english_term="AI", score=0.5),
+                ]
+            )
             s.commit()
             c.project_id = p.id  # type: ignore[attr-defined]
         yield c

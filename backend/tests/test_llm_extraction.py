@@ -1,4 +1,5 @@
 """Tests for LLM-based term extraction (mocked)."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -16,7 +17,8 @@ from app.services import llm_config_service
 @pytest.fixture
 def session(monkeypatch) -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -29,9 +31,8 @@ def session(monkeypatch) -> Iterator[Session]:
     Base.metadata.create_all(engine)
     with Session(engine) as s:
         import app.pipeline.llm_client as llm_module_imported
-        monkeypatch.setattr(
-            llm_module_imported, "SessionLocal", lambda: _SameSession(s)
-        )
+
+        monkeypatch.setattr(llm_module_imported, "SessionLocal", lambda: _SameSession(s))
         yield s
 
 
@@ -101,9 +102,7 @@ def test_extract_metadata_fields_full() -> None:
         },
         "translation_guidelines": {
             "cultural_context": "European history",
-            "key_terminology": [
-                {"term": "résistance", "suggested_translation": "مقاومت"}
-            ],
+            "key_terminology": [{"term": "résistance", "suggested_translation": "مقاومت"}],
         },
     }
     fields = llm_client._extract_metadata_fields(metadata)
@@ -260,7 +259,7 @@ def test_extract_handles_markdown_fences(session: Session) -> None:
     _configure_llm(session)
     source = "Yumiko walked."
     response = _mock_response(
-        '```json\n'
+        "```json\n"
         '{"glossary": [{"source_term": "Yumiko", "persian_primary": "یومیکو", '
         '"context_sentence": "Yumiko walked."}]}\n'
         "```"

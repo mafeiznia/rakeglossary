@@ -1,4 +1,5 @@
 """End-to-end tests for the glossary generation orchestrator."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -12,7 +13,6 @@ from app.pipeline.definitions.resolver import (
     DefinitionResult,
     DefinitionSource,
 )
-
 
 SAMPLE_TEXT = (
     "Photosynthesis is a biological process used by plants to convert light "
@@ -31,8 +31,10 @@ def _fake_resolve(term: str, text: str) -> DefinitionResult:
 
 
 def test_generate_glossary_from_raw_text() -> None:
-    with patch("app.pipeline.glossary.resolve", side_effect=_fake_resolve), \
-         patch("app.pipeline.glossary.translate", side_effect=lambda t, **kw: f"FA:{t}"):
+    with (
+        patch("app.pipeline.glossary.resolve", side_effect=_fake_resolve),
+        patch("app.pipeline.glossary.translate", side_effect=lambda t, **kw: f"FA:{t}"),
+    ):
         entries = generate_glossary(
             raw_text=SAMPLE_TEXT,
             options=GlossaryOptions(
@@ -100,16 +102,20 @@ def test_generate_glossary_computes_frequency_and_context() -> None:
     assert photo.frequency >= 2
     assert photo.context
 
+
 def test_generate_glossary_does_not_translate_definition_when_none() -> None:
     """When no definition is found, persian_definition must stay empty."""
+
     def _resolve_none(term: str, text: str) -> DefinitionResult:
         return DefinitionResult(
             text="Definition not found in text or online sources.",
             source=DefinitionSource.NONE,
         )
 
-    with patch("app.pipeline.glossary.resolve", side_effect=_resolve_none), \
-         patch("app.pipeline.glossary.translate", side_effect=lambda t, **kw: f"FA:{t}"):
+    with (
+        patch("app.pipeline.glossary.resolve", side_effect=_resolve_none),
+        patch("app.pipeline.glossary.translate", side_effect=lambda t, **kw: f"FA:{t}"),
+    ):
         entries = generate_glossary(
             raw_text=SAMPLE_TEXT,
             options=GlossaryOptions(

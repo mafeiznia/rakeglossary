@@ -1,10 +1,10 @@
 """Tests for the NLP keyword extraction pipeline."""
+
 from __future__ import annotations
 
 from app.pipeline.nlp.filters import is_valid, normalize
 from app.pipeline.nlp.candidates import Candidate
 from app.pipeline.nlp.extractor import extract_keywords
-
 
 SAMPLE = (
     "Photosynthesis is a biological process used by plants, algae, and some "
@@ -52,7 +52,8 @@ def test_extract_keywords_respects_top_n() -> None:
 def test_empty_text_returns_empty() -> None:
     assert extract_keywords("") == []
     assert extract_keywords("   ") == []
-    
+
+
 def test_extract_entities_returns_list() -> None:
     """NER should not crash on plain text."""
     from app.pipeline.nlp.candidates import extract_entities
@@ -61,4 +62,4 @@ def test_extract_entities_returns_list() -> None:
     entities = extract_entities(text)
     assert isinstance(entities, list)
     # If spaCy model is present, we expect at least one entity
-    # (test is tolerant to missing model)    
+    # (test is tolerant to missing model)

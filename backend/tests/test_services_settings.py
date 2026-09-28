@@ -1,4 +1,5 @@
 """Tests for settings_service (user stopwords/blacklist)."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -14,7 +15,8 @@ from app.services import settings_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -34,9 +36,7 @@ def test_get_user_stopwords_empty_by_default(session: Session) -> None:
 
 
 def test_set_user_stopwords_normalizes(session: Session) -> None:
-    result = settings_service.set_user_stopwords(
-        session, ["  Hello ", "WORLD", "hello", ""]
-    )
+    result = settings_service.set_user_stopwords(session, ["  Hello ", "WORLD", "hello", ""])
     # lowercased, stripped, deduped (order preserved), empty removed
     assert result == ["hello", "world"]
 
@@ -63,7 +63,5 @@ def test_remove_nonexistent_word_is_noop(session: Session) -> None:
 
 
 def test_invalid_json_returns_empty(session: Session) -> None:
-    settings_service.set_raw(
-        session, settings_service.KEY_USER_STOPWORDS, "not json"
-    )
+    settings_service.set_raw(session, settings_service.KEY_USER_STOPWORDS, "not json")
     assert settings_service.get_user_stopwords(session) == []

@@ -1,4 +1,5 @@
 """Tests for project_service."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -16,7 +17,8 @@ from app.services import project_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 

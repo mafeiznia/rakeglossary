@@ -1,4 +1,5 @@
 """Tests for /api/health and /api/about endpoints."""
+
 from __future__ import annotations
 
 import sys
@@ -17,6 +18,7 @@ def client() -> TestClient:
 
 # --- /api/health ---
 
+
 def test_health_returns_ok(client: TestClient) -> None:
     r = client.get("/api/health")
     assert r.status_code == 200
@@ -27,6 +29,7 @@ def test_health_returns_ok(client: TestClient) -> None:
 
 
 # --- /api/about ---
+
 
 def test_about_returns_all_top_level_fields(client: TestClient) -> None:
     r = client.get("/api/about")

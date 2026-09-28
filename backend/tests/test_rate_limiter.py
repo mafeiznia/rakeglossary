@@ -1,4 +1,5 @@
 """Tests for the translation rate limiter."""
+
 from __future__ import annotations
 
 import time

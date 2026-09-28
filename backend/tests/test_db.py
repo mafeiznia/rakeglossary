@@ -1,4 +1,5 @@
 """Tests for the database foundation and ORM models."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -96,13 +97,15 @@ def test_sources_ordered_by_order_index(session: Session) -> None:
     session.commit()
 
     for i, name in enumerate(["c", "a", "b"]):
-        session.add(ProjectSource(
-            project_id=p.id,
-            source_type=SourceType.TEXT,
-            text_content=name,
-            original_name=name,
-            order_index=i,
-        ))
+        session.add(
+            ProjectSource(
+                project_id=p.id,
+                source_type=SourceType.TEXT,
+                text_content=name,
+                original_name=name,
+                order_index=i,
+            )
+        )
     session.commit()
 
     session.refresh(p)
@@ -116,12 +119,14 @@ def test_cascade_delete_project_removes_sources(session: Session) -> None:
     session.commit()
 
     for name in ("a", "b", "c"):
-        session.add(ProjectSource(
-            project_id=p.id,
-            source_type=SourceType.TEXT,
-            text_content=name,
-            original_name=name,
-        ))
+        session.add(
+            ProjectSource(
+                project_id=p.id,
+                source_type=SourceType.TEXT,
+                text_content=name,
+                original_name=name,
+            )
+        )
     session.commit()
 
     assert session.query(ProjectSource).count() == 3

@@ -1,4 +1,5 @@
 """Tests for the export endpoints."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -18,7 +19,8 @@ from app.models import GlossaryEntry, Project
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -42,12 +44,16 @@ def client() -> Iterator[TestClient]:
             p = Project(title="Book")
             s.add(p)
             s.commit()
-            s.add(GlossaryEntry(
-                project_id=p.id, english_term="DNA",
-                persian_term="دی‌ان‌ای", score=0.9,
-                english_definition="A molecule.",
-                persian_definition="یک مولکول.",
-            ))
+            s.add(
+                GlossaryEntry(
+                    project_id=p.id,
+                    english_term="DNA",
+                    persian_term="دی‌ان‌ای",
+                    score=0.9,
+                    english_definition="A molecule.",
+                    persian_definition="یک مولکول.",
+                )
+            )
             s.commit()
             c.project_id = p.id  # type: ignore[attr-defined]
         yield c

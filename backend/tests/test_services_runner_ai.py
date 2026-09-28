@@ -1,4 +1,5 @@
 """Tests for AI-mode pipeline runner (mocked LLM)."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -19,7 +20,8 @@ from app.services import pipeline_runner, project_service, source_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -44,13 +46,11 @@ def _mk_project_ai(session: Session) -> Project:
     session.commit()
 
     source_service.add_text_source(
-        session, p,
+        session,
+        p,
         TextSourceCreate(
             name="s1",
-            text=(
-                "Yumiko walked through Kagoshima. "
-                "Yumiko smiled. Kagoshima was quiet."
-            ),
+            text=("Yumiko walked through Kagoshima. " "Yumiko smiled. Kagoshima was quiet."),
         ),
     )
     session.refresh(p)
@@ -84,30 +84,38 @@ _FAKE_EXTRACTION = [
 
 def _make_fake_extract(captured_calls: list | None = None):
     """Build a fake extract that matches the new signature."""
+
     def fake_extract(text, meta, target_count=50, chunk_id="chunk-0"):
         if captured_calls is not None:
-            captured_calls.append({
-                "text": text,
-                "metadata": meta,
-                "target_count": target_count,
-                "chunk_id": chunk_id,
-            })
+            captured_calls.append(
+                {
+                    "text": text,
+                    "metadata": meta,
+                    "target_count": target_count,
+                    "chunk_id": chunk_id,
+                }
+            )
         return list(_FAKE_EXTRACTION)
+
     return fake_extract
 
 
 def test_ai_pipeline_happy_path(session: Session) -> None:
     p = _mk_project_ai(session)
 
-    with patch(
-        "app.services.pipeline_runner.llm_client.is_configured",
-        return_value=True,
-    ), patch(
-        "app.services.pipeline_runner.llm_client.extract_terms_llm",
-        side_effect=_make_fake_extract(),
-    ), patch(
-        "app.services.pipeline_runner.llm_client.translate_many",
-        return_value=["یومیکو", "کاگوشیما"],
+    with (
+        patch(
+            "app.services.pipeline_runner.llm_client.is_configured",
+            return_value=True,
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.extract_terms_llm",
+            side_effect=_make_fake_extract(),
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.translate_many",
+            return_value=["یومیکو", "کاگوشیما"],
+        ),
     ):
         pipeline_runner._run_pipeline_sync(p.id, session=session)
 
@@ -115,6 +123,7 @@ def test_ai_pipeline_happy_path(session: Session) -> None:
     assert p.status == ProjectStatus.DONE
 
     from app.models import GlossaryEntry
+
     entries = session.query(GlossaryEntry).all()
     assert len(entries) == 2
     terms = {e.english_term for e in entries}
@@ -155,12 +164,15 @@ def test_ai_pipeline_requires_llm_config(session: Session) -> None:
 def test_ai_pipeline_handles_extraction_failure(session: Session) -> None:
     p = _mk_project_ai(session)
 
-    with patch(
-        "app.services.pipeline_runner.llm_client.is_configured",
-        return_value=True,
-    ), patch(
-        "app.services.pipeline_runner.llm_client.extract_terms_llm",
-        side_effect=RuntimeError("api down"),
+    with (
+        patch(
+            "app.services.pipeline_runner.llm_client.is_configured",
+            return_value=True,
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.extract_terms_llm",
+            side_effect=RuntimeError("api down"),
+        ),
     ):
         pipeline_runner._run_pipeline_sync(p.id, session=session)
 
@@ -172,12 +184,15 @@ def test_ai_pipeline_handles_extraction_failure(session: Session) -> None:
 def test_ai_pipeline_empty_extraction_fails(session: Session) -> None:
     p = _mk_project_ai(session)
 
-    with patch(
-        "app.services.pipeline_runner.llm_client.is_configured",
-        return_value=True,
-    ), patch(
-        "app.services.pipeline_runner.llm_client.extract_terms_llm",
-        return_value=[],
+    with (
+        patch(
+            "app.services.pipeline_runner.llm_client.is_configured",
+            return_value=True,
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.extract_terms_llm",
+            return_value=[],
+        ),
     ):
         pipeline_runner._run_pipeline_sync(p.id, session=session)
 
@@ -194,15 +209,19 @@ def test_ai_pipeline_uses_metadata(session: Session) -> None:
 
     captured_calls: list = []
 
-    with patch(
-        "app.services.pipeline_runner.llm_client.is_configured",
-        return_value=True,
-    ), patch(
-        "app.services.pipeline_runner.llm_client.extract_terms_llm",
-        side_effect=_make_fake_extract(captured_calls),
-    ), patch(
-        "app.services.pipeline_runner.llm_client.translate_many",
-        return_value=["", ""],
+    with (
+        patch(
+            "app.services.pipeline_runner.llm_client.is_configured",
+            return_value=True,
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.extract_terms_llm",
+            side_effect=_make_fake_extract(captured_calls),
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.translate_many",
+            return_value=["", ""],
+        ),
     ):
         pipeline_runner._run_pipeline_sync(p.id, session=session)
 
@@ -217,12 +236,15 @@ def test_ai_pipeline_cancellation(session: Session) -> None:
     def cancel_now(*args, **kwargs):
         raise CancelledError("test cancel")
 
-    with patch(
-        "app.services.pipeline_runner.llm_client.is_configured",
-        return_value=True,
-    ), patch(
-        "app.services.pipeline_runner.llm_client.extract_terms_llm",
-        side_effect=cancel_now,
+    with (
+        patch(
+            "app.services.pipeline_runner.llm_client.is_configured",
+            return_value=True,
+        ),
+        patch(
+            "app.services.pipeline_runner.llm_client.extract_terms_llm",
+            side_effect=cancel_now,
+        ),
     ):
         pipeline_runner._run_pipeline_sync(p.id, session=session)
 

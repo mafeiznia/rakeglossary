@@ -1,4 +1,5 @@
 """Tests for the projects API endpoints."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -17,7 +18,8 @@ from app.main import create_app
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
@@ -108,7 +110,8 @@ def test_delete_project(client: TestClient) -> None:
 
     r3 = client.get(f"/api/projects/{pid}")
     assert r3.status_code == 404
-    
+
+
 # ---------------------------------------------------------------------------
 # Book metadata
 # ---------------------------------------------------------------------------
@@ -133,10 +136,7 @@ def test_set_and_get_book_metadata(client: TestClient) -> None:
     assert r2.status_code == 200
     body = r2.json()
     assert body["book_metadata"]["book_metadata"]["title"] == "The Great Novel"
-    assert (
-        body["book_metadata"]["content_classification"]["primary_genre"]
-        == "Historical Fiction"
-    )
+    assert body["book_metadata"]["content_classification"]["primary_genre"] == "Historical Fiction"
 
     r3 = client.get(f"/api/projects/{pid}")
     assert r3.json()["book_metadata"]["book_metadata"]["author"] == "Jane Doe"
@@ -173,4 +173,4 @@ def test_book_metadata_accepts_partial_structure(client: TestClient) -> None:
     )
     r2 = client.get(f"/api/projects/{pid}")
     assert r2.json()["book_metadata"]["book_metadata"]["title"] == "Just a Title"
-    assert "content_classification" not in r2.json()["book_metadata"]    
+    assert "content_classification" not in r2.json()["book_metadata"]

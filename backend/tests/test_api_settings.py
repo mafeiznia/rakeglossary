@@ -1,4 +1,5 @@
 """Tests for the settings API + stopwords endpoints."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -17,7 +18,8 @@ from app.main import create_app
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )

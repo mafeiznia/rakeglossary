@@ -1,4 +1,5 @@
 """Tests for export_service (CSV, XLSX, TBX) with AI extras."""
+
 from __future__ import annotations
 
 import json

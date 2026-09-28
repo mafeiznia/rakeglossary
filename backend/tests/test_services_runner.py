@@ -1,4 +1,5 @@
 """Tests for pipeline_runner with per-source processing."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -21,7 +22,8 @@ from app.services import pipeline_runner, project_service, source_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -37,11 +39,10 @@ def session() -> Iterator[Session]:
 
 
 def _mk_project_with_source(session: Session) -> Project:
-    p = project_service.create_empty(
-        session, ProjectCreateEmpty(title="T", num_terms=5)
-    )
+    p = project_service.create_empty(session, ProjectCreateEmpty(title="T", num_terms=5))
     source_service.add_text_source(
-        session, p,
+        session,
+        p,
         TextSourceCreate(
             name="s1",
             text="hello world. hello again. hello universe.",
@@ -57,18 +58,24 @@ def test_runner_success_path(session: Session) -> None:
 
     fake_keywords = [Keyword(term="hello", score=0.9)]
 
-    with patch(
-        "app.services.pipeline_runner.extract_keywords",
-        return_value=fake_keywords,
-    ), patch(
-        "app.services.pipeline_runner.resolve_classic",
-    ) as mock_resolve, patch(
-        "app.services.pipeline_runner.translate_many",
-        return_value=["ترجمه"],
+    with (
+        patch(
+            "app.services.pipeline_runner.extract_keywords",
+            return_value=fake_keywords,
+        ),
+        patch(
+            "app.services.pipeline_runner.resolve_classic",
+        ) as mock_resolve,
+        patch(
+            "app.services.pipeline_runner.translate_many",
+            return_value=["ترجمه"],
+        ),
     ):
         from app.pipeline.definitions import DefinitionResult, DefinitionSource
+
         mock_resolve.return_value = DefinitionResult(
-            text="A greeting.", source=DefinitionSource.IN_TEXT,
+            text="A greeting.",
+            source=DefinitionSource.IN_TEXT,
         )
 
         pipeline_runner._run_pipeline_sync(p.id, session=session)
@@ -78,6 +85,7 @@ def test_runner_success_path(session: Session) -> None:
     assert p.finished_at is not None
 
     from app.models import GlossaryEntry
+
     assert session.query(GlossaryEntry).count() == 1
 
 

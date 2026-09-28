@@ -1,4 +1,5 @@
 """Tests for LLM config service and endpoints."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -18,7 +19,8 @@ from app.services import llm_config_service
 @pytest.fixture
 def session() -> Iterator[Session]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
     )
 
@@ -36,7 +38,8 @@ def session() -> Iterator[Session]:
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     engine = create_engine(
-        "sqlite:///:memory:", future=True,
+        "sqlite:///:memory:",
+        future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
