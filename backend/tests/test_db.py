@@ -249,3 +249,48 @@ def test_order_seq_unique_across_restart(session: Session, monkeypatch) -> None:
 
     assert seq1 != seq2, f"order_seq duplicated after simulated restart: {seq1} == {seq2}"
     assert seq2 > seq1, f"expected order_seq to increase, got {seq1} -> {seq2}"
+
+
+# ---------------------------------------------------------------------------
+# Bug 7: glossary entries must be unique per (project_id, english_term)
+# ---------------------------------------------------------------------------
+
+
+def test_glossary_entry_duplicate_term_rejected(session: Session) -> None:
+    """Regression: two entries with the same (project_id, english_term)
+    must not be allowed.
+
+    Before the fix, a double-run of replace_entries would silently
+    duplicate rows and pollute the glossary table.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    p = Project(title="dup-test")
+    session.add(p)
+    session.commit()
+
+    e1 = GlossaryEntry(project_id=p.id, english_term="Yumiko")
+    session.add(e1)
+    session.commit()
+
+    e2 = GlossaryEntry(project_id=p.id, english_term="Yumiko")
+    session.add(e2)
+    with pytest.raises(IntegrityError):
+        session.commit()
+    session.rollback()
+
+
+def test_glossary_entry_same_term_different_projects_allowed(
+    session: Session,
+) -> None:
+    """Same english_term in two different projects must be allowed."""
+    p1 = Project(title="proj-1")
+    p2 = Project(title="proj-2")
+    session.add_all([p1, p2])
+    session.commit()
+
+    session.add(GlossaryEntry(project_id=p1.id, english_term="Yumiko"))
+    session.add(GlossaryEntry(project_id=p2.id, english_term="Yumiko"))
+    session.commit()
+
+    assert session.query(GlossaryEntry).count() == 2

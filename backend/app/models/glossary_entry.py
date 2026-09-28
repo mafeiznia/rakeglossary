@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,6 +29,7 @@ def _utcnow() -> datetime:
 
 class GlossaryEntry(Base):
     __tablename__ = "glossary_entries"
+    __table_args__ = (UniqueConstraint("project_id", "english_term", name="uq_project_term"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     project_id: Mapped[str] = mapped_column(
