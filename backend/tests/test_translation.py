@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from app.pipeline.translation import translate, translate_many
 from app.pipeline.translation import cache as cache_module
+from app.pipeline.translation import translate, translate_many
 
 
 def test_empty_text_returns_input() -> None:
@@ -107,3 +107,52 @@ def test_argos_empty_input_returns_unchanged() -> None:
     provider = ArgosTranslatorProvider()
     assert provider.translate("") == ""
     assert provider.translate("   ") == "   "
+
+
+# ---------------------------------------------------------------------------
+# Bug 6: _looks_like_proper_name was too permissive
+# ---------------------------------------------------------------------------
+
+
+def test_looks_like_proper_name_rejects_common_words() -> None:
+    """Regression: sentences starting with common stopwords like 'The' or
+    'A' must not be classified as proper names.
+
+    Before the fix, any short text starting with an uppercase letter was
+    considered a proper name, causing pointless Wikipedia lookups during
+    the translation fallback.
+    """
+    from app.pipeline.translation.service import _looks_like_proper_name
+
+    # These start with a capital but are not proper names:
+    assert _looks_like_proper_name("The house") is False
+    assert _looks_like_proper_name("A man") is False
+    assert _looks_like_proper_name("An apple") is False
+    assert _looks_like_proper_name("This thing") is False
+    assert _looks_like_proper_name("That person") is False
+
+
+def test_looks_like_proper_name_accepts_real_names() -> None:
+    """Regression: real proper names must still be detected."""
+    from app.pipeline.translation.service import _looks_like_proper_name
+
+    assert _looks_like_proper_name("Yumiko") is True
+    assert _looks_like_proper_name("Kagoshima") is True
+    assert _looks_like_proper_name("New York") is True
+    assert _looks_like_proper_name("Haruki Murakami") is True
+
+
+def test_looks_like_proper_name_rejects_lowercase_start() -> None:
+    """Regression: lowercase-starting strings were already rejected."""
+    from app.pipeline.translation.service import _looks_like_proper_name
+
+    assert _looks_like_proper_name("hello world") is False
+    assert _looks_like_proper_name("some random words") is False
+
+
+def test_looks_like_proper_name_rejects_long_phrases() -> None:
+    """Regression: phrases longer than 3 words were already rejected."""
+    from app.pipeline.translation.service import _looks_like_proper_name
+
+    assert _looks_like_proper_name("One two three four") is False
+    assert _looks_like_proper_name("A b c d e") is False

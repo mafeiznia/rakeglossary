@@ -55,13 +55,64 @@ def translate(
     return result
 
 
+# Common English words that start with an uppercase letter in normal
+# sentence casing but are never proper names on their own. Used to
+# reject spurious Wikipedia lookups in the translation fallback.
+_NON_NAME_STARTS = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "this",
+        "that",
+        "these",
+        "those",
+        "he",
+        "she",
+        "it",
+        "they",
+        "we",
+        "you",
+        "i",
+        "and",
+        "or",
+        "but",
+        "if",
+        "when",
+        "while",
+        "because",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "not",
+        "no",
+        "yes",
+        "so",
+        "yet",
+    }
+)
+
+
 def _looks_like_proper_name(text: str) -> bool:
-    """Heuristic: short, capitalized, no verbs → likely a proper name."""
+    """Heuristic: short, capitalized, not starting with a common word.
+
+    Returns True only if the text looks like a plausible proper name,
+    so we don't waste Wikipedia lookups on phrases like "The house".
+    """
     words = text.split()
     if not words or len(words) > 3:
         return False
     # First word must start with uppercase
-    return words[0][0].isupper()
+    if not words[0][0].isupper():
+        return False
+    # Reject common stopword-like starts
+    return words[0].lower() not in _NON_NAME_STARTS
 
 
 def _wikipedia_fallback(texts: list[str], target: str) -> list[str]:
