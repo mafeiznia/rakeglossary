@@ -3,6 +3,8 @@ and a Wikipedia Persian-title fallback for proper names."""
 
 from __future__ import annotations
 
+import threading
+
 from app.core.logging import get_logger
 from app.pipeline.translation import cache
 from app.pipeline.translation.argos import ArgosTranslatorProvider
@@ -96,10 +98,20 @@ def translate_many(
     provider: str = "google",
     source: str = "en",
     target: str = "fa",
+    cancel_event: threading.Event | None = None,
 ) -> list[str]:
-    """Translate a batch of texts with cache + rate limiting + fallback."""
+    """Translate a batch of texts with cache + rate limiting + fallback.
+
+    If `cancel_event` is provided and becomes set, raises CancelledError
+    before starting a new batch, so the pipeline can stop promptly.
+    """
+    from app.pipeline.exceptions import CancelledError
+
     if not texts:
         return []
+
+    if cancel_event is not None and cancel_event.is_set():
+        raise CancelledError("Translation cancelled by user.")
 
     results: list[str | None] = [None] * len(texts)
     to_translate: list[tuple[int, str]] = []
@@ -123,6 +135,8 @@ def translate_many(
     )
 
     # Step 2: batch call
+    if cancel_event is not None and cancel_event.is_set():
+        raise CancelledError("Translation cancelled by user.")
     try:
         translator = get_translator(provider)
         batch = [t for _, t in to_translate]

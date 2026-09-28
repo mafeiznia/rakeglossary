@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 
 from app.core.config import settings
 from app.core.db import SessionLocal
@@ -759,9 +760,15 @@ def translate_many(
     chunk_size: int = 25,
     context: str | None = None,
     metadata: dict | None = None,
+    cancel_event: threading.Event | None = None,
 ) -> list[str]:
     if not texts:
         return []
+
+    if cancel_event is not None and cancel_event.is_set():
+        from app.pipeline.exceptions import CancelledError
+
+        raise CancelledError("Translation cancelled by user.")
 
     if context is None and metadata is not None:
         context = _build_book_context(metadata)
@@ -799,6 +806,10 @@ def translate_many(
     )
 
     for start in range(0, len(to_translate), chunk_size):
+        if cancel_event is not None and cancel_event.is_set():
+            from app.pipeline.exceptions import CancelledError
+
+            raise CancelledError("Translation cancelled by user.")
         chunk = to_translate[start : start + chunk_size]
         items = [t for _, t in chunk]
 

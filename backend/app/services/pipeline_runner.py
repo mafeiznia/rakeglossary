@@ -269,7 +269,11 @@ def _run_pipeline_classic(
                 total=1,
             )
             try:
-                persian_terms = translate_many(terms_to_translate, provider="google")
+                persian_terms = translate_many(
+                    terms_to_translate,
+                    provider="google",
+                    cancel_event=cancel_event,
+                )
             except CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001
@@ -285,6 +289,7 @@ def _run_pipeline_classic(
                 persian_terms = llm_client.translate_many(
                     terms_to_translate,
                     metadata=metadata,
+                    cancel_event=cancel_event,
                 )
             except CancelledError:
                 raise
@@ -311,7 +316,11 @@ def _run_pipeline_classic(
                 total=1,
             )
             try:
-                translated = translate_many(def_texts, provider="google")
+                translated = translate_many(
+                    def_texts,
+                    provider="google",
+                    cancel_event=cancel_event,
+                )
                 for i, tr in zip(def_idx, translated):
                     persian_defs_full[i] = tr
             except CancelledError:
@@ -329,6 +338,7 @@ def _run_pipeline_classic(
                 translated = llm_client.translate_many(
                     def_texts,
                     metadata=metadata,
+                    cancel_event=cancel_event,
                 )
                 for i, tr in zip(def_idx, translated):
                     persian_defs_full[i] = tr

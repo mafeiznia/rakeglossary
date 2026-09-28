@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import re
 import threading
-
-
-class CancelledError(Exception):
-    """Raised when the pipeline is cancelled by the user."""
-
-
-from collections.abc import Callable
+from app.pipeline.exceptions import CancelledError
 from dataclasses import asdict, dataclass, field
 
 from app.core.logging import get_logger
