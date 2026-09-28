@@ -110,3 +110,59 @@ def test_extract_handles_non_list_glossary(session: Session) -> None:
         result = llm_client.extract_terms_llm("Yumiko walked.", None)
 
     assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Bug 8: extraction prompt omits some metadata fields
+# ---------------------------------------------------------------------------
+
+
+def test_extraction_prompt_includes_all_metadata_fields() -> None:
+    """Regression: _EXTRACTION_SYSTEM_FULL must surface every metadata field
+    that _extract_metadata_fields produces, so the LLM can use them.
+
+    Currently missing: sub_genres, main_themes, target_audience,
+    reading_level, vocabulary_complexity, cultural_context.
+    """
+    metadata = {
+        "book_metadata": {"title": "The Novel", "author": "Jane Doe"},
+        "content_classification": {
+            "primary_genre": "Historical Fiction",
+            "sub_genres": ["Romance", "War"],
+            "main_themes": ["love", "loss"],
+            "setting": {"time_period": "WWII", "location": "Paris"},
+        },
+        "audience_analysis": {
+            "target_audience": "Adults",
+            "reading_level": "Intermediate",
+        },
+        "stylistic_analysis": {
+            "vocabulary_complexity": "Everyday",
+            "overall_tone": "Melancholic",
+            "writing_style": "Descriptive",
+        },
+        "translation_guidelines": {
+            "cultural_context": "European history",
+            "key_terminology": [{"term": "resistance", "suggested_translation": "مقاومت"}],
+        },
+    }
+    prompt, kind = llm_client._build_extraction_prompt(metadata, 40, "c-1")
+
+    assert kind == "full"
+
+    # Fields already in the prompt — must not regress:
+    assert "The Novel" in prompt
+    assert "Jane Doe" in prompt
+    assert "Historical Fiction" in prompt
+    assert "WWII" in prompt
+    assert "Paris" in prompt
+
+    # Fields that _extract_metadata_fields produces but the prompt omits:
+    assert "Romance" in prompt, "sub_genres missing from prompt"
+    assert "War" in prompt, "sub_genres missing from prompt"
+    assert "love" in prompt, "main_themes missing from prompt"
+    assert "loss" in prompt, "main_themes missing from prompt"
+    assert "Adults" in prompt, "target_audience missing from prompt"
+    assert "Intermediate" in prompt, "reading_level missing from prompt"
+    assert "Everyday" in prompt, "vocabulary_complexity missing from prompt"
+    assert "European history" in prompt, "cultural_context missing from prompt"
