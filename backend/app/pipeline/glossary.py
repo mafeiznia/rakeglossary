@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import re
 import threading
-from app.pipeline.exceptions import CancelledError
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 
 from app.core.logging import get_logger
 from app.pipeline.definitions import DefinitionSource, resolve
+from app.pipeline.exceptions import CancelledError
 from app.pipeline.extractors import load_text_from_source
 from app.pipeline.nlp import Keyword, extract_keywords
 from app.pipeline.translation import translate
