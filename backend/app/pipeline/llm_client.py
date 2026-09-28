@@ -674,11 +674,10 @@ def extract_terms_llm(
 
     glossary = data.get("glossary")
     if not isinstance(glossary, list):
-        log.info(
-            f"LLM extraction [{chunk_id}]: raw glossary length={len(glossary)}, "
-            f"keys={list(glossary[0].keys()) if glossary else 'empty'}"
+        log.warning(
+            f"LLM extraction [{chunk_id}]: response has no 'glossary' list. "
+            f"keys={list(data.keys())}"
         )
-        log.warning("LLM extraction: response has no 'glossary' list.")
         return []
 
     cleaned: list[dict] = []
