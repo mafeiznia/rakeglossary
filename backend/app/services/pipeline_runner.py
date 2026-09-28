@@ -51,15 +51,53 @@ CHUNK_WORDS = 2500
 
 
 def _split_into_chunks(text: str, chunk_words: int) -> list[str]:
-    """Split `text` into word-based chunks, preserving word boundaries."""
+    """Split `text` into word-based chunks, preserving paragraph boundaries.
+
+    Strategy:
+      - Split into paragraphs by blank lines ('\\n\\n').
+      - Accumulate paragraphs into a chunk until `chunk_words` is reached.
+      - If a single paragraph exceeds `chunk_words`, split it by words.
+      - Paragraph markers within a chunk are preserved, so that the LLM
+        sees the original structure and context_sentence values remain
+        faithful to the source text.
+    """
     if not text or not text.strip():
         return []
-    words = text.split()
-    if len(words) <= chunk_words:
-        return [text]
+
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        return []
+
     chunks: list[str] = []
-    for i in range(0, len(words), chunk_words):
-        chunks.append(" ".join(words[i : i + chunk_words]))
+    current_parts: list[str] = []
+    current_words = 0
+
+    for para in paragraphs:
+        para_words = len(para.split())
+
+        if para_words > chunk_words:
+            # Oversized paragraph: flush pending parts, then split by words
+            if current_parts:
+                chunks.append("\n\n".join(current_parts))
+                current_parts = []
+                current_words = 0
+            words = para.split()
+            for i in range(0, len(words), chunk_words):
+                chunks.append(" ".join(words[i : i + chunk_words]))
+            continue
+
+        if current_words + para_words > chunk_words:
+            # Current chunk is full; start a new one
+            chunks.append("\n\n".join(current_parts))
+            current_parts = [para]
+            current_words = para_words
+        else:
+            current_parts.append(para)
+            current_words += para_words
+
+    if current_parts:
+        chunks.append("\n\n".join(current_parts))
+
     return chunks
 
 

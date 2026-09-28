@@ -274,3 +274,45 @@ def test_split_into_chunks_multiple() -> None:
 def test_split_into_chunks_empty() -> None:
     assert pipeline_runner._split_into_chunks("", 10) == []
     assert pipeline_runner._split_into_chunks("   ", 10) == []
+
+
+# ---------------------------------------------------------------------------
+# Bug 4: _split_into_chunks must preserve paragraph boundaries
+# ---------------------------------------------------------------------------
+
+
+def test_split_into_chunks_preserves_paragraph_marker() -> None:
+    """Regression: chunking must not collapse '\\n\\n' into a single space.
+
+    Before the fix, `text.split()` erased paragraph boundaries, which
+    could produce context_sentence values that don't exist in the
+    original text.
+    """
+    text = "para one line\n\npara two line"
+    chunks = pipeline_runner._split_into_chunks(text, 20)
+
+    assert len(chunks) == 1
+    assert "para one line" in chunks[0]
+    assert "para two line" in chunks[0]
+    assert "\n\n" in chunks[0], "paragraph marker was lost"
+
+
+def test_split_into_chunks_does_not_merge_full_paragraphs() -> None:
+    """Regression: a new paragraph must not be appended to a full chunk."""
+    # Two paragraphs, 3 words each, limit 4 words per chunk.
+    text = "a1 a2 a3\n\nb1 b2 b3"
+    chunks = pipeline_runner._split_into_chunks(text, 4)
+
+    assert len(chunks) == 2
+    assert "b1" not in chunks[0], "second paragraph leaked into first chunk"
+    assert "b1 b2 b3" in chunks[1]
+
+
+def test_split_into_chunks_breaks_oversized_paragraph() -> None:
+    """A single paragraph larger than the limit must still be split."""
+    text = " ".join(f"w{i}" for i in range(10))
+    chunks = pipeline_runner._split_into_chunks(text, 3)
+
+    assert len(chunks) == 4
+    assert chunks[0] == "w0 w1 w2"
+    assert chunks[3] == "w9"
