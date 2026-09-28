@@ -5,7 +5,6 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
-from itertools import count
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -15,6 +14,9 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    event,
+    func,
+    select,
 )
 from sqlalchemy import (
     Enum as SAEnum,
@@ -32,7 +34,10 @@ def _utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-_ORDER_SEQ = count()
+# Note: order_seq is assigned in a `before_insert` listener below.
+# We deliberately avoid a module-level itertools.count() because it
+# would reset to 0 on every server restart and produce duplicate
+# order_seq values across sessions.
 
 
 class ProjectStatus(str, Enum):
@@ -53,9 +58,7 @@ class Project(Base):
     __tablename__ = "projects"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    order_seq: Mapped[int] = mapped_column(
-        Integer, default=lambda: next(_ORDER_SEQ), nullable=False, index=True
-    )
+    order_seq: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Status / progress
@@ -111,3 +114,21 @@ class Project(Base):
 
     def __repr__(self) -> str:
         return f"<Project {self.id[:8]} title={self.title!r} status={self.status.value}>"
+
+
+# ---------------------------------------------------------------------------
+# Assign order_seq from the current DB state (not from an in-memory counter)
+# ---------------------------------------------------------------------------
+
+
+@event.listens_for(Project, "before_insert")
+def _assign_order_seq(mapper, connection, target) -> None:
+    """Assign the next order_seq by querying the max from the database.
+
+    Runs before INSERT, so the value is always derived from persisted
+    state. This survives server restarts and never produces duplicates.
+    """
+    if target.order_seq:
+        return
+    max_seq = connection.execute(select(func.max(Project.__table__.c.order_seq))).scalar()
+    target.order_seq = (max_seq or 0) + 1

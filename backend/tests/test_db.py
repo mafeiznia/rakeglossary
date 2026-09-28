@@ -210,3 +210,42 @@ def test_status_enum_values(session: Session) -> None:
         session.commit()
         session.refresh(p)
         assert p.status == status
+
+
+# ---------------------------------------------------------------------------
+# Bug 3: order_seq counter resets on module reload / server restart
+# ---------------------------------------------------------------------------
+
+
+def test_order_seq_unique_across_restart(session: Session, monkeypatch) -> None:
+    """Regression: resetting any in-memory counter (simulating a server
+    restart) must not produce duplicate order_seq values.
+
+    Before the fix, order_seq was driven by a module-level itertools.count()
+    that reset to 0 on restart, so a fresh project could collide with the
+    first project ever created.
+    """
+    import itertools
+
+    from app.models import project as project_module
+
+    # Fresh counter (simulate a just-started server)
+    if hasattr(project_module, "_ORDER_SEQ"):
+        monkeypatch.setattr(project_module, "_ORDER_SEQ", itertools.count())
+
+    p1 = Project(title="first")
+    session.add(p1)
+    session.commit()
+    seq1 = p1.order_seq
+
+    # Simulate another restart: reset the counter again
+    if hasattr(project_module, "_ORDER_SEQ"):
+        monkeypatch.setattr(project_module, "_ORDER_SEQ", itertools.count())
+
+    p2 = Project(title="second")
+    session.add(p2)
+    session.commit()
+    seq2 = p2.order_seq
+
+    assert seq1 != seq2, f"order_seq duplicated after simulated restart: {seq1} == {seq2}"
+    assert seq2 > seq1, f"expected order_seq to increase, got {seq1} -> {seq2}"
