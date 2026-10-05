@@ -186,7 +186,7 @@ def test_llm_config(session: SessionDep) -> LlmTestResult:
 
     start = time.monotonic()
     try:
-        result = llm_client.fetch_definition("photosynthesis", context="")
+        result = llm_client.fetch_definition("photosynthesis", context="", skip_cache=True)
     except Exception as exc:  # noqa: BLE001
         return LlmTestResult(success=False, message=f"Error: {exc}")
     latency = int((time.monotonic() - start) * 1000)

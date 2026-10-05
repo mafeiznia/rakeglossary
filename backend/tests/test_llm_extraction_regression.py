@@ -258,3 +258,42 @@ def test_translate_many_retries_missing_items(session: Session) -> None:
     assert results[1] == "دو", f"missing item was not retried: {results!r}"
     # Two calls: initial chunk + one retry
     assert mock_client.chat.completions.create.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# Bug 11: LLM connection test returns cached result instead of a real call
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_definition_skip_cache(session: Session) -> None:
+    """Regression: fetch_definition must be able to bypass the cache so
+    the LLM connection test can verify a real round-trip."""
+    cache_module._CACHE.clear()
+    _configure_llm(session)
+
+    # Pre-populate the cache with a stale value (must be >= 10 chars
+    # to survive the LLM client's "too short" filter)
+    from app.pipeline.llm_client import (
+        _CACHE_NS_DEF,
+        _cache_set,
+    )
+
+    _cache_set(
+        _CACHE_NS_DEF,
+        "openai",
+        "gpt-4o-mini",
+        "photosynthesis",
+        "STALE CACHED VALUE",
+    )
+
+    # Fresh LLM response (also >= 10 chars)
+    response = _mock_response("FRESH DEFINITION FROM LLM")
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = response
+
+    with patch("openai.OpenAI", return_value=mock_client):
+        result = llm_client.fetch_definition("photosynthesis", context="", skip_cache=True)
+
+    assert result == "FRESH DEFINITION FROM LLM", f"expected fresh result, got {result!r}"
+    # The API must have been called (cache was bypassed)
+    assert mock_client.chat.completions.create.call_count == 1

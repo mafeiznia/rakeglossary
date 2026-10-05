@@ -470,15 +470,26 @@ def _build_definition_prompt(term: str, context: str) -> str:
     return f'Term: "{term}"\n\nContext (may contain the meaning):\n{ctx}'
 
 
-def fetch_definition(term: str, context: str = "") -> str | None:
+def fetch_definition(
+    term: str,
+    context: str = "",
+    skip_cache: bool = False,
+) -> str | None:
+    """Fetch a definition for `term`.
+
+    If `skip_cache` is True, the cache lookup is bypassed and the result
+    is not written back to the cache. Used by the LLM connection test to
+    verify a real round-trip to the provider.
+    """
     if not term or not term.strip():
         return None
 
     client, cfg, base_url = _get_client_and_config()
 
-    cached = _cache_get(_CACHE_NS_DEF, cfg.provider, cfg.model, term)
-    if cached is not None:
-        return cached or None
+    if not skip_cache:
+        cached = _cache_get(_CACHE_NS_DEF, cfg.provider, cfg.model, term)
+        if cached is not None:
+            return cached or None
 
     log.info(
         f"LLM definition request: provider={cfg.provider}, model={cfg.model}, "
@@ -507,13 +518,15 @@ def fetch_definition(term: str, context: str = "") -> str | None:
         text = text[1:-1].strip()
 
     if len(text) < 10:
-        _cache_set(_CACHE_NS_DEF, cfg.provider, cfg.model, term, "")
+        if not skip_cache:
+            _cache_set(_CACHE_NS_DEF, cfg.provider, cfg.model, term, "")
         return None
 
     if len(text) > _MAX_DEF_LEN:
         text = text[:_MAX_DEF_LEN].rstrip() + "..."
 
-    _cache_set(_CACHE_NS_DEF, cfg.provider, cfg.model, term, text)
+    if not skip_cache:
+        _cache_set(_CACHE_NS_DEF, cfg.provider, cfg.model, term, text)
     return text
 
 
