@@ -7,8 +7,11 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  RefreshCw,
   Save,
+  Sparkles,
   Trash2,
+  X,
   XCircle,
   Zap,
 } from 'lucide-react'
@@ -18,7 +21,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip } from '@/components/ui/tooltip'
-import { llmApi, type LlmConfigRead, type LlmTestResult } from '@/api/llm'
+import {
+  llmApi,
+  type LlmConfigRead,
+  type LlmModelsRead,
+  type LlmTestResult,
+} from '@/api/llm'
 import { useConfirm } from '@/features/confirm/confirmStore'
 
 export function LlmSettings() {
@@ -46,6 +54,45 @@ export function LlmSettings() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
 
+  // --- Models list ---
+  const modelsQuery = useQuery({
+    queryKey: ['llm', 'models', provider],
+    queryFn: () => llmApi.getModels(provider),
+    enabled: enabled && !!provider,
+    staleTime: 60_000,
+  })
+
+  const refreshModelsMutation = useMutation({
+    mutationFn: () => llmApi.refreshModels(provider),
+    onSuccess: (data) => {
+      qc.setQueryData(['llm', 'models', provider], data)
+      toast.success(
+        t('settings.llm.modelList.refreshSuccess', {
+          count: data.models.length,
+        })
+      )
+    },
+    onError: (err) => {
+      toast.error(
+        t('settings.llm.modelList.refreshFailed', {
+          message: (err as Error).message,
+        })
+      )
+    },
+  })
+
+  const removeModelMutation = useMutation({
+    mutationFn: (m: string) => llmApi.deleteUserModel(provider, m),
+    onSuccess: (_, removedModel) => {
+      qc.invalidateQueries({ queryKey: ['llm', 'models', provider] })
+      toast.success(t('settings.llm.modelList.removed'))
+      // If we removed the currently selected model, clear the input
+      if (removedModel === model) {
+        setModel('')
+      }
+    },
+  })  
+
   useEffect(() => {
     const cfg = configQuery.data
     if (!cfg || initialized) return
@@ -58,6 +105,16 @@ export function LlmSettings() {
 
   const currentProvider = providersQuery.data?.find((p) => p.key === provider)
 
+
+  // Helper: is a model in the user's history for the current provider?
+  const isInUserHistory = (m: string): boolean =>
+    modelsQuery.data?.user_models?.includes(m) ?? false
+
+  // Helper: is a model coming from the fetched cache (but not user history)?
+  const isInCache = (m: string): boolean =>
+    (modelsQuery.data?.cached_models?.includes(m) ?? false) &&
+    !isInUserHistory(m)
+    
   const handleProviderChange = (key: string) => {
     setProvider(key)
     const p = providersQuery.data?.find((x) => x.key === key)
@@ -277,20 +334,123 @@ export function LlmSettings() {
                 </span>
               </Tooltip>
             </Label>
-            <Input
-              id="llm-model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder={currentProvider?.default_model}
-              list="llm-model-suggestions"
-              className="max-w-sm"
-            />
+
+            <div className="flex gap-2 max-w-md">
+              <Input
+                id="llm-model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder={currentProvider?.default_model}
+                list="llm-model-suggestions"
+                className="flex-1"
+              />
+              <Tooltip content={t('settings.llm.modelList.refresh')}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refreshModelsMutation.mutate()}
+                  disabled={
+                    refreshModelsMutation.isPending ||
+                    !cfg?.has_api_key
+                  }
+                >
+                  {refreshModelsMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+              </Tooltip>
+            </div>
+
             {currentProvider && (
               <datalist id="llm-model-suggestions">
-                {currentProvider.suggested_models.map((m) => (
+                {modelsQuery.data?.models.map((m) => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
+            )}
+
+            <p
+              className="text-xs"
+              style={{ color: 'rgb(var(--color-text-muted))' }}
+            >
+              {t('settings.llm.modelList.hint')}
+            </p>
+
+            {/* Model list */}
+            {modelsQuery.data && modelsQuery.data.models.length > 0 && (
+              <div
+                className="rounded-md border max-w-md max-h-56 overflow-y-auto"
+                style={{ borderColor: 'rgb(var(--color-border))' }}
+              >
+                <ul className="divide-y" style={{ borderColor: 'rgb(var(--color-border))' }}>
+                  {modelsQuery.data.models.map((m) => {
+                    const isCurrent = m === model
+                    const isUser = isInUserHistory(m)
+                    const isCached = !isUser && isInCache(m)
+                    return (
+                      <li
+                        key={m}
+                        className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-opacity-50"
+                        style={{
+                          backgroundColor: isCurrent
+                            ? 'rgb(var(--color-primary) / 0.1)'
+                            : undefined,
+                        }}
+                        onClick={() => setModel(m)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="truncate font-mono text-xs">
+                            {m}
+                          </span>
+                          {isUser && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                              style={{
+                                backgroundColor:
+                                  'rgb(var(--color-primary) / 0.15)',
+                                color: 'rgb(var(--color-primary))',
+                              }}
+                            >
+                              {t('settings.llm.modelList.userBadge')}
+                            </span>
+                          )}
+                          {isCached && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                              style={{
+                                backgroundColor:
+                                  'rgb(var(--color-info) / 0.15)',
+                                color: 'rgb(var(--color-info))',
+                              }}
+                            >
+                              {t('settings.llm.modelList.cachedBadge')}
+                            </span>
+                          )}
+                        </div>
+                        {isUser && (
+                          <Tooltip
+                            content={t('settings.llm.modelList.removeFromHistory')}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeModelMutation.mutate(m)
+                              }}
+                              className="opacity-50 hover:opacity-100 shrink-0"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </Tooltip>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
             )}
           </div>
 

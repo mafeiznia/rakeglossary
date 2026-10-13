@@ -32,6 +32,14 @@ export interface LlmTestResult {
   latency_ms: number | null
 }
 
+export interface LlmModelsRead {
+  provider: string
+  models: string[]
+  user_models: string[]
+  cached_models: string[]
+  cached: boolean
+}
+
 export const llmApi = {
   getProviders: async (): Promise<LlmProviderInfo[]> => {
     const { data } = await api.get<LlmProviderInfo[]>(
@@ -60,4 +68,26 @@ export const llmApi = {
     const { data } = await api.post<LlmTestResult>('/settings/llm/test')
     return data
   },
+  getModels: async (provider: string): Promise<LlmModelsRead> => {
+    const { data } = await api.get<LlmModelsRead>(
+      `/settings/llm/models?provider=${encodeURIComponent(provider)}`
+    )
+    return data
+  },
+
+  refreshModels: async (provider: string): Promise<LlmModelsRead> => {
+    const { data } = await api.post<LlmModelsRead>(
+      `/settings/llm/models/refresh?provider=${encodeURIComponent(provider)}`
+    )
+    return data
+  },
+
+  deleteUserModel: async (
+    provider: string,
+    model: string
+  ): Promise<void> => {
+    await api.delete(
+      `/settings/llm/models/user/${encodeURIComponent(provider)}/${encodeURIComponent(model)}`
+    )
+  },  
 }
