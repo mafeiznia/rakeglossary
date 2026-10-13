@@ -94,7 +94,7 @@ class Settings:
     )
 
     # --- LLM ---
-    llm_timeout: float = float(os.getenv("RG_LLM_TIMEOUT", "30.0"))
+    llm_timeout: float = float(os.getenv("RG_LLM_TIMEOUT", "90.0"))
     llm_max_tokens: int = int(os.getenv("RG_LLM_MAX_TOKENS", "80"))
     llm_temperature: float = float(os.getenv("RG_LLM_TEMPERATURE", "0.3"))
 
