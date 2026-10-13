@@ -16,6 +16,7 @@ from app.pipeline.definitions.llm_providers import list_providers
 from app.schemas.settings import (
     LlmConfigRead,
     LlmConfigUpdate,
+    LlmModelsRead,
     LlmProviderInfo,
     LlmTestResult,
     SettingRead,
@@ -149,7 +150,13 @@ def update_llm_config(
     if "api_key" in data and data["api_key"] is not None:
         current.api_key = data["api_key"]
     if "model" in data and data["model"] is not None:
-        current.model = data["model"]
+        new_model = data["model"]
+        if new_model != current.model:
+            current.model = new_model
+            # Remember this model in the user's history
+            llm_config_service.add_user_model(
+                session, current.provider, new_model
+            )
     if "base_url" in data:
         current.base_url = data["base_url"] or None
 
@@ -170,6 +177,81 @@ def update_llm_config(
 )
 def clear_llm_config(session: SessionDep) -> None:
     llm_config_service.clear_config(session)
+
+@router.get(
+    "/llm/models",
+    response_model=LlmModelsRead,
+    summary="List available models for a provider (union of history, cache, suggested)",
+)
+def list_llm_models(
+    provider: str,
+    session: SessionDep,
+) -> LlmModelsRead:
+    models_list = llm_config_service.list_available_models(session, provider)
+    user_history = llm_config_service.get_user_models(session).get(provider, [])
+    cached_list = llm_config_service.get_models_cache(session, provider) or []
+    return LlmModelsRead(
+        provider=provider,
+        models=models_list,
+        user_models=user_history,
+        cached_models=cached_list,
+        cached=len(cached_list) > 0,
+    )
+
+
+@router.post(
+    "/llm/models/refresh",
+    response_model=LlmModelsRead,
+    summary="Fetch the model list from the provider and cache it",
+)
+def refresh_llm_models(
+    provider: str,
+    session: SessionDep,
+) -> LlmModelsRead:
+    from app.pipeline.llm_client import ModelFetchError, fetch_provider_models
+
+    cfg = llm_config_service.get_config(session)
+    if not cfg.enabled or not cfg.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LLM is not enabled or has no API key.",
+        )
+
+    try:
+        fetched = fetch_provider_models(
+            api_key=cfg.api_key,
+            base_url=cfg.base_url,
+            provider=provider,
+        )
+    except ModelFetchError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
+    llm_config_service.set_models_cache(session, provider, fetched)
+    union = llm_config_service.list_available_models(session, provider)
+    user_history = llm_config_service.get_user_models(session).get(provider, [])
+    cached_list = llm_config_service.get_models_cache(session, provider) or []
+    return LlmModelsRead(
+        provider=provider,
+        models=union,
+        user_models=user_history,
+        cached_models=cached_list,
+        cached=True,
+    )
+
+@router.delete(
+    "/llm/models/user/{provider}/{model}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a model from the user's history",
+)
+def delete_user_model(
+    provider: str,
+    model: str,
+    session: SessionDep,
+) -> None:
+    llm_config_service.remove_user_model(session, provider, model)
 
 
 @router.post(

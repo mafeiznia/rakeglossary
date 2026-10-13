@@ -82,3 +82,19 @@ class LlmTestResult(BaseModel):
     success: bool
     message: str
     latency_ms: int | None = None
+    
+
+
+class LlmModelsRead(BaseModel):
+    """List of models available for a provider.
+
+    `models` is the union (user + cached + suggested), ordered by
+    priority. `user_models` and `cached_models` are subsets, provided
+    separately so the UI can render badges.
+    """
+
+    provider: str
+    models: list[str]
+    user_models: list[str] = []
+    cached_models: list[str] = []
+    cached: bool = False

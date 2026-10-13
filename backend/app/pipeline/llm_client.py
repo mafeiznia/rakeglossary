@@ -185,6 +185,10 @@ Return ONLY a valid JSON object:
 
 class LLMNotConfiguredError(RuntimeError):
     """Raised when no LLM provider is configured or enabled."""
+    
+
+class ModelFetchError(RuntimeError):
+    """Raised when fetching the model list from a provider fails."""
 
 
 # ---------------------------------------------------------------------------
@@ -953,3 +957,77 @@ def translate_many(
 
     final = [r if r is not None else "" for r in results]
     return _apply_required_translations(texts, final, metadata)
+    
+
+
+# ---------------------------------------------------------------------------
+# Provider model list fetch
+# ---------------------------------------------------------------------------
+
+
+def fetch_provider_models(
+    api_key: str,
+    base_url: str | None,
+    provider: str,
+) -> list[str]:
+    """Fetch the list of models available from a provider's /v1/models endpoint.
+
+    Args:
+        api_key: Provider API key.
+        base_url: Optional custom base URL. If None, uses provider default.
+        provider: Provider key (e.g. "openai", "gapgpt"). Used to look up
+            the default base_url if `base_url` is None.
+
+    Returns:
+        Sorted list of unique model IDs.
+
+    Raises:
+        ModelFetchError: If the API call fails or the SDK is not available.
+    """
+    if not api_key:
+        raise ModelFetchError("No API key provided.")
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise ModelFetchError(
+            "openai package not installed. Run: pip install openai"
+        ) from exc
+
+    # Resolve base_url if not explicitly provided
+    resolved_base_url = base_url
+    if not resolved_base_url:
+        info = get_provider(provider)
+        if info is not None:
+            resolved_base_url = info.base_url
+
+    kwargs: dict = {
+        "api_key": api_key,
+        "timeout": settings.llm_timeout,
+    }
+    if resolved_base_url:
+        kwargs["base_url"] = resolved_base_url
+
+    if provider == "openrouter":
+        kwargs["default_headers"] = {
+            "HTTP-Referer": "http://localhost",
+            "X-Title": "RakeGlossary",
+        }
+
+    try:
+        client = OpenAI(**kwargs)
+        response = client.models.list()
+    except Exception as exc:  # noqa: BLE001
+        log.warning(
+            f"Failed to fetch models from {provider}: "
+            f"{type(exc).__name__}: {exc}"
+        )
+        raise ModelFetchError(f"{type(exc).__name__}: {exc}") from exc
+
+    ids: set[str] = set()
+    for item in getattr(response, "data", []) or []:
+        mid = getattr(item, "id", None)
+        if mid and isinstance(mid, str) and mid.strip():
+            ids.add(mid.strip())
+
+    return sorted(ids)
