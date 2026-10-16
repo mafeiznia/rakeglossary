@@ -1017,7 +1017,7 @@ def fetch_provider_models(
     try:
         client = OpenAI(**kwargs)
         response = client.models.list()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning(
             f"Failed to fetch models from {provider}: "
             f"{type(exc).__name__}: {exc}"
