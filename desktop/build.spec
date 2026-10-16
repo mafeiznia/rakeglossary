@@ -70,6 +70,10 @@ datas = [
     # NLTK data (stopwords, punkt, ...)
     (str(NLTK_DATA / "corpora"), "nltk_data/corpora"),
     (str(NLTK_DATA / "tokenizers"), "nltk_data/tokenizers"),
+
+    # Desktop icons (used by the pywebview window on Windows)
+    (str(SPEC_DIR / "assets" / "icon.ico"), "assets"),
+    (str(SPEC_DIR / "assets" / "icon.png"), "assets"),
 ] + yake_datas
 
 
@@ -182,7 +186,7 @@ exe = EXE(
     target_arch=None,  # auto (ARM64 on this machine)
     codesign_identity=None,
     entitlements_file=None,
-    # icon=str(SPEC_DIR / "assets" / "icon.ico"),  # add later
+    icon=str(SPEC_DIR / "assets" / "icon.ico"),
 )
 
 coll = COLLECT(

@@ -200,6 +200,8 @@ def main() -> None:
 
     log.info("Backend is up. Opening window...")
 
+    icon_path = _resolve_icon_path()
+
     webview.create_window(
         title="RakeGlossary",
         url=f"http://{HOST}:{port}/",
@@ -209,10 +211,93 @@ def main() -> None:
         text_select=True,
     )
 
+    # On Windows, set the window/taskbar icon via ctypes. We use this
+    # because pywebview 6.x with the EdgeChromium backend does not honor
+    # the `icon=` parameter reliably.
+    if icon_path is not None:
+        threading.Thread(
+            target=_force_windows_window_icon,
+            args=("RakeGlossary", icon_path),
+            daemon=True,
+        ).start()
+
     webview.start(debug=False)
 
     log.info("Window closed. Backend will stop with the process.")
 
+# ---------------------------------------------------------------------------
+# Windows window icon helper
+# ---------------------------------------------------------------------------
+
+
+def _resolve_icon_path() -> Path | None:
+    """Return the path to the .ico icon, in both dev and frozen modes."""
+    if getattr(sys, "frozen", False):
+        # PyInstaller: assets/ was bundled via build.spec
+        candidate = Path(sys._MEIPASS) / "assets" / "icon.ico"  # type: ignore[attr-defined]
+    else:
+        # Dev mode: desktop/assets/icon.ico relative to this file
+        candidate = Path(__file__).resolve().parent / "assets" / "icon.ico"
+    return candidate if candidate.is_file() else None
+
+
+def _force_windows_window_icon(window_title: str, ico_path: Path) -> None:
+    """Set the window + taskbar icon on Windows via ctypes.
+
+    pywebview's `icon=` parameter is not always honored on Windows when
+    using the EdgeChromium backend, so we set the icon ourselves after
+    the window has been created.
+
+    Runs in a background thread because the window doesn't exist yet at
+    the time main() calls this.
+    """
+    if sys.platform != "win32":
+        return
+
+    import ctypes
+
+    user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+
+    WM_SETICON = 0x0080
+    ICON_SMALL = 0
+    ICON_BIG = 1
+    IMAGE_ICON = 1
+    LR_LOADFROMFILE = 0x0000
+    LR_DEFAULTSIZE = 0x0040
+    SM_CXSMICON = 49
+    SM_CYSMICON = 50
+
+    # Poll for the window to appear (up to ~10 seconds)
+    hwnd = 0
+    for _ in range(100):
+        hwnd = user32.FindWindowW(None, window_title)
+        if hwnd:
+            break
+        time.sleep(0.1)
+
+    if not hwnd:
+        log.warning(f"Could not find window '{window_title}' to set icon.")
+        return
+
+    ico_str = str(ico_path)
+
+    hicon_big = user32.LoadImageW(
+        None, ico_str, IMAGE_ICON, 0, 0,
+        LR_LOADFROMFILE | LR_DEFAULTSIZE,
+    )
+    hicon_small = user32.LoadImageW(
+        None, ico_str, IMAGE_ICON,
+        user32.GetSystemMetrics(SM_CXSMICON),
+        user32.GetSystemMetrics(SM_CYSMICON),
+        LR_LOADFROMFILE,
+    )
+
+    if hicon_big:
+        user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big)
+    if hicon_small:
+        user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small)
+
+    log.info(f"Window icon applied from {ico_path}")
 
 if __name__ == "__main__":
     main()
