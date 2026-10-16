@@ -2,7 +2,7 @@ export default {
   translation: {
     app: {
       name: 'RakeGlossary',
-      tagline: 'تولیدکننده خودکار واژه‌نامه (انگلیسی → فارسی)',
+      tagline: 'تولیدکننده خودکار واژه‌نامه (ترجمه از انگلیسی به فارسی)',
     },
     nav: {
       home: 'خانه',

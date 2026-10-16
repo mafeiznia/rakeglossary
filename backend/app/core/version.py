@@ -6,7 +6,7 @@ import sys
 
 __version__ = "0.2.0"
 APP_NAME = "RakeGlossary"
-APP_TAGLINE_FA = "تولیدکننده خودکار واژه‌نامه‌ی دو‌زبانه (انگلیسی → فارسی)"
+APP_TAGLINE_FA = "تولیدکننده خودکار واژه‌نامه‌ی دو‌زبانه (ترجمه از انگلیسی به فارسی)"
 APP_TAGLINE_EN = "Automated glossary generator (EN → FA)"
 LICENSE = "MIT"
 COPYRIGHT_YEAR = 2026
