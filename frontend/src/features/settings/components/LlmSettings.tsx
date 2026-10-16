@@ -9,7 +9,6 @@ import {
   Loader2,
   RefreshCw,
   Save,
-  Sparkles,
   Trash2,
   X,
   XCircle,
@@ -24,7 +23,6 @@ import { Tooltip } from '@/components/ui/tooltip'
 import {
   llmApi,
   type LlmConfigRead,
-  type LlmModelsRead,
   type LlmTestResult,
 } from '@/api/llm'
 import { useConfirm } from '@/features/confirm/confirmStore'
