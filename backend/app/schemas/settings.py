@@ -82,7 +82,6 @@ class LlmTestResult(BaseModel):
     success: bool
     message: str
     latency_ms: int | None = None
-    
 
 
 class LlmModelsRead(BaseModel):

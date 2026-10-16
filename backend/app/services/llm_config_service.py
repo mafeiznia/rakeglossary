@@ -74,7 +74,6 @@ def clear_config(session: Session) -> None:
         session.delete(row)
         session.commit()
         log.info("Cleared LLM config.")
-        
 
 
 # ---------------------------------------------------------------------------
@@ -130,9 +129,7 @@ def add_user_model(session: Session, provider: str, model: str) -> None:
     models = models[:20]
 
     history[provider] = models
-    settings_service.set_raw(
-        session, _USER_MODELS_KEY, json.dumps(history, ensure_ascii=False)
-    )
+    settings_service.set_raw(session, _USER_MODELS_KEY, json.dumps(history, ensure_ascii=False))
 
 
 def remove_user_model(session: Session, provider: str, model: str) -> None:
@@ -145,9 +142,7 @@ def remove_user_model(session: Session, provider: str, model: str) -> None:
         history[provider] = models
     else:
         del history[provider]
-    settings_service.set_raw(
-        session, _USER_MODELS_KEY, json.dumps(history, ensure_ascii=False)
-    )
+    settings_service.set_raw(session, _USER_MODELS_KEY, json.dumps(history, ensure_ascii=False))
 
 
 # ---------------------------------------------------------------------------
@@ -191,9 +186,7 @@ def get_models_cache(session: Session, provider: str) -> list[str] | None:
     return [str(m) for m in models if m]
 
 
-def set_models_cache(
-    session: Session, provider: str, models: list[str]
-) -> None:
+def set_models_cache(session: Session, provider: str, models: list[str]) -> None:
     """Store a fresh list of models for `provider` with a TTL timestamp."""
     raw = settings_service.get_raw(session, _MODELS_CACHE_KEY)
     data: dict = {}
@@ -209,9 +202,7 @@ def set_models_cache(
         "models": [str(m) for m in models if m],
         "fetched_at": _utcnow().isoformat(),
     }
-    settings_service.set_raw(
-        session, _MODELS_CACHE_KEY, json.dumps(data, ensure_ascii=False)
-    )
+    settings_service.set_raw(session, _MODELS_CACHE_KEY, json.dumps(data, ensure_ascii=False))
 
 
 def clear_models_cache(session: Session, provider: str) -> None:
@@ -226,10 +217,7 @@ def clear_models_cache(session: Session, provider: str) -> None:
     if not isinstance(data, dict):
         return
     data.pop(provider, None)
-    settings_service.set_raw(
-        session, _MODELS_CACHE_KEY, json.dumps(data, ensure_ascii=False)
-    )
-
+    settings_service.set_raw(session, _MODELS_CACHE_KEY, json.dumps(data, ensure_ascii=False))
 
 
 # ---------------------------------------------------------------------------

@@ -185,7 +185,7 @@ Return ONLY a valid JSON object:
 
 class LLMNotConfiguredError(RuntimeError):
     """Raised when no LLM provider is configured or enabled."""
-    
+
 
 class ModelFetchError(RuntimeError):
     """Raised when fetching the model list from a provider fails."""
@@ -957,7 +957,6 @@ def translate_many(
 
     final = [r if r is not None else "" for r in results]
     return _apply_required_translations(texts, final, metadata)
-    
 
 
 # ---------------------------------------------------------------------------
@@ -990,9 +989,7 @@ def fetch_provider_models(
     try:
         from openai import OpenAI
     except ImportError as exc:
-        raise ModelFetchError(
-            "openai package not installed. Run: pip install openai"
-        ) from exc
+        raise ModelFetchError("openai package not installed. Run: pip install openai") from exc
 
     # Resolve base_url if not explicitly provided
     resolved_base_url = base_url
@@ -1018,10 +1015,7 @@ def fetch_provider_models(
         client = OpenAI(**kwargs)
         response = client.models.list()
     except Exception as exc:
-        log.warning(
-            f"Failed to fetch models from {provider}: "
-            f"{type(exc).__name__}: {exc}"
-        )
+        log.warning(f"Failed to fetch models from {provider}: " f"{type(exc).__name__}: {exc}")
         raise ModelFetchError(f"{type(exc).__name__}: {exc}") from exc
 
     ids: set[str] = set()

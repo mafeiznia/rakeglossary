@@ -154,9 +154,7 @@ def update_llm_config(
         if new_model != current.model:
             current.model = new_model
             # Remember this model in the user's history
-            llm_config_service.add_user_model(
-                session, current.provider, new_model
-            )
+            llm_config_service.add_user_model(session, current.provider, new_model)
     if "base_url" in data:
         current.base_url = data["base_url"] or None
 
@@ -177,6 +175,7 @@ def update_llm_config(
 )
 def clear_llm_config(session: SessionDep) -> None:
     llm_config_service.clear_config(session)
+
 
 @router.get(
     "/llm/models",
@@ -240,6 +239,7 @@ def refresh_llm_models(
         cached_models=cached_list,
         cached=True,
     )
+
 
 @router.delete(
     "/llm/models/user/{provider}/{model}",
