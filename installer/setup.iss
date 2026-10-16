@@ -2,7 +2,7 @@
 ; Inno Setup script for RakeGlossary
 ; ---------------------------------------------------------------------------
 ; Build:
-;   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
+;   "C:\Users\aharp\AppData\Local\Programs\Inno Setup 7\ISCC.exe" installer\setup.iss
 ;
 ; Output:
 ;   dist\installer\RakeGlossary-Setup-x.y.z.exe
