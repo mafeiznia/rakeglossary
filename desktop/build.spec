@@ -78,6 +78,14 @@ datas = [
 # ---------------------------------------------------------------------------
 
 hiddenimports = [
+    # pywebview (desktop window) — Windows uses edgechromium + winforms
+    "webview",
+    "webview.platforms.edgechromium",
+    "webview.platforms.winforms",
+    "clr",
+    "clr_loader",
+    "pythonnet",
+    
     # Uvicorn dynamic imports
     "uvicorn.logging",
     "uvicorn.loops",
