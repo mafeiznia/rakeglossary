@@ -12,6 +12,7 @@ In production (PyInstaller bundle), the frontend build is expected at
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
 import socket
@@ -22,6 +23,67 @@ from pathlib import Path
 
 import uvicorn
 import webview
+
+
+
+# ---------------------------------------------------------------------------
+# Log redirection (must run BEFORE logging.basicConfig)
+#
+# When built with console=False, sys.stdout and sys.stderr are None in the
+# frozen .exe. Redirect them to a log file so:
+#   - uvicorn / loguru / logging don't crash on None
+#   - users can still find logs for debugging
+# ---------------------------------------------------------------------------
+
+
+def _setup_log_redirection() -> None:
+    """Redirect stdout/stderr to a log file in %APPDATA%\\RakeGlossary\\logs.
+
+    Only active when running as a frozen .exe (console=False). In dev mode
+    (python desktop/launcher.py), we keep stdout/stderr attached to the
+    console for immediate feedback.
+    """
+    if not getattr(sys, "frozen", False):
+        return
+
+    # Where to put the log file
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        log_dir = Path(appdata) / "RakeGlossary" / "logs"
+    else:
+        log_dir = Path.home() / ".rakeglossary" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = log_dir / "launcher.log"
+
+    # Rotate: keep the previous session's log
+    if log_file.exists():
+        backup = log_file.with_suffix(".prev.log")
+        try:
+            if backup.exists():
+                backup.unlink()
+            log_file.rename(backup)
+        except OSError:
+            pass
+
+    # Open in line-buffered mode for real-time writes
+    f = open(log_file, "w", encoding="utf-8", buffering=1)
+
+    # On Windows with console=False, stdout/stderr can be None.
+    # Some libraries call sys.stdout.isatty() or sys.stderr.fileno().
+    # We give them the file handle, which supports both.
+    sys.stdout = f
+    sys.stderr = f
+
+    # Silence "no console" complaints from Python
+    import io
+
+    if sys.stdin is None:
+        sys.stdin = io.StringIO()
+
+
+# Must run before logging.basicConfig and before any imports that log
+_setup_log_redirection()
 
 # ---------------------------------------------------------------------------
 # Path resolution: works both in dev and inside a PyInstaller bundle
@@ -121,10 +183,109 @@ def _configure_data_dir() -> Path:
 
 _DATA_DIR = _configure_data_dir()
 
+# ---------------------------------------------------------------------------
+# Splash screen (shown while the backend starts)
+# ---------------------------------------------------------------------------
+
+_SPLASH_HTML_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    cursor: default;
+  }
+  body {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #6366F1 0%, #4338CA 100%);
+    color: white;
+    padding: 24px;
+    -webkit-app-region: drag;
+  }
+  .icon {
+    width: 84px; height: 84px;
+    margin-bottom: 18px;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.28));
+    pointer-events: none;
+  }
+  h1 {
+    font-size: 22px; font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 11.5px;
+    opacity: 0.82;
+    margin-bottom: 26px;
+  }
+  .spinner {
+    width: 26px; height: 26px;
+    border: 3px solid rgba(255,255,255,0.25);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-text {
+    margin-top: 14px;
+    font-size: 12px;
+    opacity: 0.9;
+    letter-spacing: 0.2px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <img class="icon" src="data:image/png;base64,{icon_b64}" alt="">
+  <h1>RakeGlossary</h1>
+  <div class="subtitle">Automated Glossary Generator</div>
+  <div class="spinner"></div>
+  <div class="loading-text">Starting up…</div>
+</body>
+</html>"""
+
+
+def _build_splash_html() -> str:
+    """Build the splash screen HTML with the app icon inline as base64."""
+    icon_b64 = ""
+    icon_path = _resolve_icon_path()
+    if icon_path is not None:
+        try:
+            icon_b64 = base64.b64encode(icon_path.read_bytes()).decode("ascii")
+        except OSError as exc:
+            log.warning(f"Could not read icon for splash: {exc}")
+    return _SPLASH_HTML_TEMPLATE.replace("{icon_b64}", icon_b64)
 
 # ---------------------------------------------------------------------------
 # Port management
 # ---------------------------------------------------------------------------
+def _center_position(width: int, height: int) -> tuple[int, int] | None:
+    """Return (x, y) to center a window on the primary monitor.
+
+    Returns None if the screen size can't be determined (falls back to
+    letting the OS decide).
+    """
+    try:
+        if sys.platform == "win32":
+            import ctypes
+
+            user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+            # SM_CXSCREEN = 0, SM_CYSCREEN = 1 (primary monitor)
+            screen_w = user32.GetSystemMetrics(0)
+            screen_h = user32.GetSystemMetrics(1)
+            if screen_w <= 0 or screen_h <= 0:
+                return None
+            x = max(0, (screen_w - width) // 2)
+            y = max(0, (screen_h - height) // 2)
+            return (x, y)
+    except Exception as exc:  # noqa: BLE001
+        log.warning(f"Could not compute center position: {exc}")
+    return None
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
@@ -181,11 +342,34 @@ def _run_backend(host: str, port: int) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-
 def main() -> None:
     port = _find_free_port(DEFAULT_PORT)
     log.info(f"Using port {port}")
 
+    icon_path = _resolve_icon_path()
+
+    # 1) Create ONE window. It starts with the splash HTML, then we
+    #    navigate it to the app URL once the backend is ready. This way
+    #    the window keeps its size/position from start to finish (no
+    #    "jump" between splash and main window).
+    main_w, main_h = 1280, 800
+    main_pos = _center_position(main_w, main_h)
+
+    window_kwargs: dict = {
+        "title": "RakeGlossary",
+        "html": _build_splash_html(),
+        "width": main_w,
+        "height": main_h,
+        "min_size": (900, 600),
+        "text_select": True,
+    }
+    if main_pos is not None:
+        window_kwargs["x"] = main_pos[0]
+        window_kwargs["y"] = main_pos[1]
+
+    window = webview.create_window(**window_kwargs)
+
+    # 2) Start the backend in a background thread
     backend_thread = threading.Thread(
         target=_run_backend,
         args=(HOST, port),
@@ -194,37 +378,37 @@ def main() -> None:
     )
     backend_thread.start()
 
-    if not _wait_for_server(HOST, port):
-        log.error("Backend did not start within the timeout. Exiting.")
-        sys.exit(1)
+    # 3) Runs inside pywebview's GUI event loop right after the window
+    #    is created. A worker thread waits for the backend and then
+    #    swaps the splash for the real app.
+    def _on_started() -> None:
+        def _wait_and_navigate() -> None:
+            if not _wait_for_server(HOST, port):
+                log.error("Backend did not start within the timeout. Exiting.")
+                os._exit(1)
 
-    log.info("Backend is up. Opening window...")
+            log.info("Backend is up. Loading application...")
 
-    icon_path = _resolve_icon_path()
+            # Load the real app in the SAME window (no jump)
+            try:
+                window.load_url(f"http://{HOST}:{port}/")
+            except Exception as exc:  # noqa: BLE001
+                log.error(f"Failed to load app URL: {exc}")
 
-    webview.create_window(
-        title="RakeGlossary",
-        url=f"http://{HOST}:{port}/",
-        width=1280,
-        height=800,
-        min_size=(900, 600),
-        text_select=True,
-    )
+            # Apply the window icon on Windows
+            if icon_path is not None:
+                threading.Thread(
+                    target=_force_windows_window_icon,
+                    args=("RakeGlossary", icon_path),
+                    daemon=True,
+                ).start()
 
-    # On Windows, set the window/taskbar icon via ctypes. We use this
-    # because pywebview 6.x with the EdgeChromium backend does not honor
-    # the `icon=` parameter reliably.
-    if icon_path is not None:
-        threading.Thread(
-            target=_force_windows_window_icon,
-            args=("RakeGlossary", icon_path),
-            daemon=True,
-        ).start()
+        threading.Thread(target=_wait_and_navigate, daemon=True).start()
 
-    webview.start(debug=False)
+    # 4) Start the GUI loop
+    webview.start(func=_on_started, debug=False)
 
-    log.info("Window closed. Backend will stop with the process.")
-
+    log.info("Window closed. Backend will stop with the process.")   
 # ---------------------------------------------------------------------------
 # Windows window icon helper
 # ---------------------------------------------------------------------------
