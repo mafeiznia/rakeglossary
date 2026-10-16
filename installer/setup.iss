@@ -9,7 +9,7 @@
 ; ---------------------------------------------------------------------------
 
 #define MyAppName "RakeGlossary"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Mahmoud Aharpour Feiznia"
 #define MyAppURL "https://github.com/mafeiznia/rakeglossary"
 #define MyAppExeName "RakeGlossary.exe"

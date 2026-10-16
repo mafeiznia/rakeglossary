@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 APP_NAME = "RakeGlossary"
 APP_TAGLINE_FA = "تولیدکننده خودکار واژه‌نامه‌ی دو‌زبانه (انگلیسی → فارسی)"
 APP_TAGLINE_EN = "Automated glossary generator (EN → FA)"
