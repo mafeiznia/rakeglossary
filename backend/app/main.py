@@ -39,6 +39,15 @@ async def lifespan(_app: FastAPI):
     log.info(f"Starting {APP_NAME} v{__version__}")
     init_db()
     log.info("Database initialized.")
+    # Recover from a previous crash: no live pipeline can exist yet.
+    try:
+        from app.core.db import SessionLocal
+        from app.services import project_service
+
+        with SessionLocal() as s:
+            project_service.fail_stale_processing_projects(s)
+    except Exception as exc:  # noqa: BLE001
+        log.warning(f"Stale-processing recovery failed: {exc}")
     yield
     log.info(f"Shutting down {APP_NAME}")
 

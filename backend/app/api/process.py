@@ -103,11 +103,13 @@ def cancel_process(project: ProjectDep, session: SessionDep) -> ProjectRead:
             status_code=status.HTTP_409_CONFLICT,
             detail="Project is not currently processing.",
         )
+
     cancelled = pipeline_runner.cancel_pipeline(project.id)
     if not cancelled:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="No live pipeline found for this project.",
-        )
+        # No live pipeline (e.g. backend restarted mid-run). Fall back
+        # to a direct DB update so the UI always converges.
+        log.warning(f"No live pipeline for {project.id[:8]}; " f"marking CANCELLED directly.")
+        project_service.mark_cancelled(session, project)
+
     session.refresh(project)
     return project_to_read(project)

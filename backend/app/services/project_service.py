@@ -249,3 +249,37 @@ def clear_book_metadata(session: Session, project: Project) -> Project:
     session.refresh(project)
     log.info(f"Cleared book metadata for project {project.id[:8]}")
     return project
+
+
+# ---------------------------------------------------------------------------
+# Startup recovery
+# ---------------------------------------------------------------------------
+
+
+def fail_stale_processing_projects(session: Session) -> int:
+    """Mark any project still in PROCESSING as FAILED.
+
+    Called once at startup. A project in PROCESSING state means a pipeline
+    was running when the backend last shut down. Since pipelines run in
+    in-memory threads, they don't survive a restart — so the DB is the
+    only stale artifact.
+
+    Returns the number of projects that were updated.
+    """
+    rows = (
+        session.execute(select(Project).where(Project.status == ProjectStatus.PROCESSING))
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return 0
+
+    now = _utcnow()
+    for proj in rows:
+        proj.status = ProjectStatus.FAILED
+        proj.error_message = "Backend restarted while processing. Please retry."
+        proj.finished_at = now
+
+    session.commit()
+    log.warning(f"Marked {len(rows)} stale PROCESSING project(s) as FAILED on startup.")
+    return len(rows)
