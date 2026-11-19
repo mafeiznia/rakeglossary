@@ -1,5 +1,5 @@
 # RakeGlossary
-<div direction="rtl" markdown="1">
+
 > **تولیدکننده‌ی خودکار واژه‌نامه‌ی دو زبانه (انگلیسی → فارسی) از کتاب و متن**
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
@@ -10,11 +10,10 @@
 [![Backend CI](https://github.com/mafeiznia/rakeglossary/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/mafeiznia/rakeglossary/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/mafeiznia/rakeglossary/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/mafeiznia/rakeglossary/actions/workflows/frontend-ci.yml)
 
-RakeGlossary یک اپلیکیشن دسکتاپ محلی است که فایل‌های PDF، DOCX، EPUB یا TXT را دریافت می‌کند، واژه‌های کلیدی متن را با ترکیبی از روش‌های NLP کلاسیک و هوش مصنوعی استخراج می‌کند، برای هر واژه تعریف می‌سازد و آن‌ها را به فارسی ترجمه می‌کند.
+برنامه RakeGlossary یک اپلیکیشن دسکتاپ محلی است که فایل‌های PDF، DOCX، EPUB یا TXT را دریافت می‌کند، واژه‌های کلیدی متن را با ترکیبی از روش‌های NLP کلاسیک و هوش مصنوعی استخراج می‌کند، برای هر واژه تعریف می‌سازد و آن‌ها را به فارسی ترجمه می‌کند.
 
 نتیجه یک واژه‌نامه‌ی ساختارمند است که می‌توانی در قالب‌های CSV، Excel یا TBX ذخیره کنی.
 
-</div>
 ---
 
 ## فهرست
