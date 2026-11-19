@@ -1,5 +1,5 @@
 # RakeGlossary
-
+<div direction="rtl" markdown="1">
 > **تولیدکننده‌ی خودکار واژه‌نامه‌ی دو زبانه (انگلیسی → فارسی) از کتاب و متن**
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
@@ -14,6 +14,7 @@ RakeGlossary یک اپلیکیشن دسکتاپ محلی است که فایل‌
 
 نتیجه یک واژه‌نامه‌ی ساختارمند است که می‌توانی در قالب‌های CSV، Excel یا TBX ذخیره کنی.
 
+</div>
 ---
 
 ## فهرست
